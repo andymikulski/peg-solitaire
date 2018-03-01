@@ -11,6 +11,8 @@ export default class Peg extends Transform implements Printable, IInteractable {
   // Padding to allow room for drop shadow (should probably _not_ be hardcoded)
   static renderPadding: number = 5;
 
+  public isEnabled: boolean = true;
+
   // Game board coordinates (_not_ display coords)
   public x: number;
   public y: number;
@@ -33,21 +35,21 @@ export default class Peg extends Transform implements Printable, IInteractable {
     }
   }
 
-  private prerenderSelected() {
+  protected prerenderSelected() {
     Peg.SelectPrerender = Peg.VCR.getContext('select');
     const ctx = Peg.SelectPrerender;
 
-    ctx.shadowColor = 'hsl(1.1, 100%, 27.8%)';
+    ctx.shadowColor = 'hsl(75.9, 96.2%, 20.8%)';
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;
     ctx.shadowBlur = 1;
-    ctx.fillStyle = '#ff5e5b';
+    ctx.fillStyle = '#97cc04';
 
     ctx.arc(this.width / 2, this.width / 2, this.width / 2, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  private prerenderInactive() {
+  protected prerenderInactive() {
     Peg.InactivePrerender = Peg.VCR.getContext('inactive');
     const ctx = Peg.InactivePrerender;
 
@@ -60,6 +62,8 @@ export default class Peg extends Transform implements Printable, IInteractable {
     ctx.arc(this.width / 2, this.width / 2, this.width / 2, 0, Math.PI * 2);
     ctx.fill();
   }
+
+  update(delta: number, elapsed: number) { }
 
   //
 
@@ -93,10 +97,17 @@ export default class Peg extends Transform implements Printable, IInteractable {
 
     toContext.font = `${this.width / 2}px Dimbo`;
     toContext.fillStyle = 'white';
+    toContext.strokeStyle = 'rgba(100,100,100,0.5)';
+
+    // toContext.strokeText(
+    //   this.health.toString(),
+    //   (this.width / 10) + (this.width / 2) + offset.position[0] + this.position[0],
+    //   11 + (this.height / 2) + offset.position[1] + this.position[1]
+    // );
     toContext.fillText(
       this.health.toString(),
-      -5 + (this.width / 2) + offset.position[0] + this.position[0],
-      10 + (this.height / 2) + offset.position[1] + this.position[1]
+      (this.width * -0.1) + (this.width / 2) + offset.position[0] + this.position[0],
+      (this.height * 0.225) + (this.height / 2) + offset.position[1] + this.position[1]
     );
 
   }

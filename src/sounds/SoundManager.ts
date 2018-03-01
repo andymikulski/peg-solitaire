@@ -13,6 +13,12 @@ export default class SoundManager {
     }
   }
 
+  setSoundVolume(soundName: string, volume: number) {
+    if (this.loadedSounds[soundName]) {
+      this.loadedSounds[soundName].volume = volume;
+    }
+  }
+
   play(soundName: string) {
     if (this.loadedSounds[soundName]) {
       this.loadedSounds[soundName].play();

@@ -6,6 +6,7 @@ import { Provider, Service } from '../common/Provider';
 import InteractionLayer from '../input/InteractionLayer';
 import Slot from './Slot';
 import SoundManager from '../sounds/SoundManager';
+import ExplodingPeg from './ExplodingPeg';
 
 export default abstract class GameBoard extends Transform implements Printable {
   map: any;
@@ -52,21 +53,27 @@ export default abstract class GameBoard extends Transform implements Printable {
   }
 
   createPeg(x: number, y: number) {
+    const rng = Provider.lookup(Service.RNG);
     const ui: InteractionLayer = Provider.lookup(Service.UI);
-    const peg = new Peg(this.size, this.size);
+    const isExplodingPeg = x === 3 && y === 2; //rng.bool(0.15);
+    const peg = new (isExplodingPeg ? ExplodingPeg : Peg)(this.size, this.size);
     peg.position = this.calculatePegPlacement(x, y);
 
+    peg.health = isExplodingPeg ? 0 : (rng.bool(0.2) ? (rng.bool(0.25) ? 3 : 2) : 1);
     peg.x = x;
     peg.y = y;
     peg.width = this.size;
     peg.height = this.size;
-    peg.onClick = () => this.onPegClick(x, y, peg);
+    if (isExplodingPeg) {
+      peg.isEnabled = false;
+    } else {
+      peg.onClick = () => this.onPegClick(x, y, peg);
+      // Tell interaction layer to check this for click events.
+      ui.register(peg, this);
+    }
+
     this.map[peg.y][peg.x] = peg;
-
     this.pegs.push(peg);
-
-    // Tell interaction layer to check this for click events.
-    ui.register(peg, this);
 
     return peg;
   }
@@ -90,6 +97,15 @@ export default abstract class GameBoard extends Transform implements Printable {
     return peg;
   }
 
+  update(delta: number, elapsed: number) {
+    this.slots.forEach(slot => {
+      slot.update(delta, elapsed);
+    });
+
+    this.pegs.forEach(peg => {
+      peg.update(delta, elapsed);
+    });
+  }
 
 
   print(toContext: CanvasRenderingContext2D) {
@@ -150,36 +166,78 @@ export default abstract class GameBoard extends Transform implements Printable {
       this.createSlotFromPeg(this.selectedPeg[0]);
       this.removePeg(this.selectedPeg[0]);
 
-      delPeg.health -= 1;
 
-      if (delPeg.health <= 0) {
+      if (delPeg instanceof ExplodingPeg) {
         this.createSlotFromPeg(delPeg);
         this.removePeg(delPeg);
+
+        // get delpeg neighbors
+
+        let thing;
+        let neighbors = [];
+        for (let ix = -1; ix <= 1; ix += 1) {
+          for (let iy = -1; iy <= 1; iy += 1) {
+
+            if ((ix === 1 && iy === -1)
+              || (ix === -1 && iy === 1)
+            ) { continue; }
+
+            thing = this.map[iy + delPeg.y][ix + delPeg.x];
+            if (thing instanceof Peg) {
+              neighbors.push(thing);
+            }
+          }
+        }
+
+        // remove and/or expldoe them if necessary
+        neighbors.forEach(neigh => {
+          neigh.health -= 1;
+          if (neigh.health <= 0) {
+            this.createSlotFromPeg(neigh);
+            this.removePeg(neigh);
+          }
+        });
+        sound.play('boom');
+      } else {
+        delPeg.health -= 1;
+
+        if (delPeg.health <= 0) {
+          this.createSlotFromPeg(delPeg);
+          this.removePeg(delPeg);
+        }
+
+
+        // -- NEW PEG IN THIS SLOT --
+        const newPeg = this.createPegFromSlot(slot);
+        newPeg.health = this.selectedPeg[0].health;
+        this.removeSlot(slot);
+
+        this.selectedPeg = [newPeg, newPeg.x, newPeg.y];
+        newPeg.isSelected = true;
+
+        sound.play(delPeg.health <= 0 ? 'peg-remove' : 'peg-move');
+        sound.play('peg-move');
       }
 
-      // -- NEW PEG IN THIS SLOT --
-      const newPeg = this.createPegFromSlot(slot);
-      newPeg.health = this.selectedPeg[0].health;
-      this.removeSlot(slot);
 
-      this.selectedPeg = [newPeg, newPeg.x, newPeg.y];
-      newPeg.isSelected = true;
-
-      sound.play(delPeg.health <= 0 ? 'peg-remove' : 'peg-move');
-      sound.play('peg-move');
       this.checkWinCondition();
     }
   }
 
   onPegClick(x: number, y: number, peg: Peg) {
+    if (!peg.isEnabled) {
+      return;
+    }
+
     const sound: SoundManager = Provider.lookup(Service.SOUND);
     sound.play('peg-select');
+
     if (this.selectedPeg) {
+      this.selectedPeg[0].isSelected = false;
+
       if (this.selectedPeg[0] === peg) {
-        this.selectedPeg[0].isSelected = !this.selectedPeg[0].isSelected;
+        this.selectedPeg = null;
         return;
-      } else {
-        this.selectedPeg[0].isSelected = false;
       }
     }
 
@@ -189,7 +247,7 @@ export default abstract class GameBoard extends Transform implements Printable {
 
   checkWinCondition() {
     if (this.pegs.length === 1) {
-      alert('oh shiiiiiit');
+      alert('you win!');
     }
   }
 

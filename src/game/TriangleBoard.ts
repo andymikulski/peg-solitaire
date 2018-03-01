@@ -15,8 +15,6 @@ export default class TriangleGameBoard extends GameBoard {
   }
 
   buildBoard() {
-    const rng = Provider.lookup(Service.RNG);
-
     this.map = [];
     const size = this.size;
     const middlePoint = Math.round((this.count * this.count) / 4);
@@ -30,7 +28,6 @@ export default class TriangleGameBoard extends GameBoard {
         } else {
           const peg = this.createPeg(x, y);
           this.map[y][x] = peg;
-          peg.health = rng.integer(0, 5) > 0 ? 1 : 2;
         }
       }
     }

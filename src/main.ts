@@ -6,10 +6,7 @@ import { Provider, Service } from './common/Provider';
 import InteractionLayer from './input/InteractionLayer';
 import { GameTimer } from './game/GameTimer';
 import SoundManager from './sounds/SoundManager';
-
-// Only external lib used!
-import * as Random from 'random-js';
-const RandService = new Random(Random.engines.mt19937().seed(123));
+import provideRNG from './common/RNG';
 
 class PegSolitaire {
   pipeline: RenderingPipeline;
@@ -29,21 +26,23 @@ class PegSolitaire {
 
     const ui = new InteractionLayer();
     Provider.register(Service.UI, ui);
-
-    Provider.register(Service.RNG, RandService);
+    Provider.register(Service.RNG, provideRNG('silly seed'));
 
     const sound = new SoundManager();
     Provider.register(Service.SOUND, sound);
 
+    const cachebust = Date.now();
     sound.load({
-      'music': 'sounds/xerxes.mp3',
-      'deny': 'sounds/cant-move.wav',
-      'peg-move': 'sounds/peg-land.wav',
-      'peg-remove': 'sounds/peg-removed.wav',
-      'peg-select': 'sounds/peg-select.wav',
+      'music': `sounds/xerxes.mp3?${cachebust}`,
+      'boom': `sounds/boom3.wav?${cachebust}`,
+      'deny': `sounds/cant-move.wav?${cachebust}`,
+      'peg-move': `sounds/peg-land-2.wav?${cachebust}`,
+      'peg-remove': `sounds/peg-removed.wav?${cachebust}`,
+      'peg-select': `sounds/peg-select.wav?${cachebust}`,
     });
 
-    // sound.play('music');
+    sound.play('music');
+    sound.setSoundVolume('music', 0.75);
 
 
     document.body.innerHTML = '';
@@ -74,6 +73,7 @@ class PegSolitaire {
 
     // logic
     this.gameTimer.update(delta, elapsed);
+    this.gameBoard.update(delta, elapsed);
 
     requestAnimationFrame(this.gameLoop.bind(this));
     this.lastTime = Date.now();

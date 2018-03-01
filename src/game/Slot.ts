@@ -40,6 +40,8 @@ export default class Slot extends Transform implements Printable, IInteractable 
     }
   }
 
+  update(delta: number, elapsed: number) { }
+
   print(toContext: CanvasRenderingContext2D, offset: Transform) {
     toContext.drawImage(
       Slot.Prerender.canvas,
