@@ -1,15 +1,19 @@
 import RenderingPipeline, { Printable } from './rendering/RenderingPipeline';
 import VCR from './rendering/VCR';
-import EntityManager from './EntityManager';
 import GameBoard from './game/GameBoard';
 import TriangleGameBoard from './game/TriangleBoard';
 import { Provider, Service } from './common/Provider';
 import InteractionLayer from './input/InteractionLayer';
 import { GameTimer } from './game/GameTimer';
+import SoundManager from './sounds/SoundManager';
+
+// Only external lib used!
+import * as Random from 'random-js';
+const RandService = new Random(Random.engines.mt19937().seed(123));
 
 class PegSolitaire {
   pipeline: RenderingPipeline;
-  entityMan: EntityManager;
+
   unitSize: number;
   startTime: number;
   lastTime: number;
@@ -23,15 +27,36 @@ class PegSolitaire {
 
     this.pipeline.setBackground('#ececec');
 
-    new InteractionLayer();
-    const count = 5;
-    this.gameBoard = new TriangleGameBoard(count);
+    const ui = new InteractionLayer();
+    Provider.register(Service.UI, ui);
 
-    this.pipeline.addRenderer(this.gameBoard);
+    Provider.register(Service.RNG, RandService);
+
+    const sound = new SoundManager();
+    Provider.register(Service.SOUND, sound);
+
+    sound.load({
+      'music': 'sounds/xerxes.mp3',
+      'deny': 'sounds/cant-move.wav',
+      'peg-move': 'sounds/peg-land.wav',
+      'peg-remove': 'sounds/peg-removed.wav',
+      'peg-select': 'sounds/peg-select.wav',
+    });
+
+    // sound.play('music');
+
 
     document.body.innerHTML = '';
     document.body.appendChild(this.pipeline.getCanvas());
 
+    this.startGame();
+  }
+
+  startGame() {
+    const count = 6;
+    this.gameBoard = new TriangleGameBoard(count);
+
+    this.pipeline.addRenderer(this.gameBoard);
     this.startTime = Date.now();
     this.lastTime = Date.now();
 

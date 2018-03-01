@@ -11,8 +11,8 @@ export default class SquareGameBoard extends GameBoard {
     this.position = [boardX, boardY];
   }
 
-  calculatePegSize(count: number) {
-    this.size = 200 * Math.pow(count, -0.8302527);
+  calculatePegSize(count: number): number {
+    return 200 * Math.pow(count, -0.8302527);
   }
 
   buildBoard() {

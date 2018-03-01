@@ -4,7 +4,7 @@
   "description": "A simple Webpack 2 starter with TypeScript transpilation",
   "main": "index.js",
   "scripts": {
-    "start": "webpack-dev-server --port 9000 --inline --progress --profile --colors --watch --content-base src/",
+    "start": "webpack-dev-server --host 0.0.0.0 --port 9000 --inline --progress --profile --colors --watch --content-base src/",
     "build": "webpack --config webpack.config.js",
     "build.prod": "webpack --config webpack.config.js -p",
     "test": "karma start karma.config.js"
@@ -19,6 +19,7 @@
   "devDependencies": {
     "@types/jasmine": "2.5.40",
     "@types/node": "7.0.0",
+    "@types/random-js": "^1.0.30",
     "awesome-typescript-loader": "^3.5.0",
     "jasmine-core": "2.5.2",
     "karma": "1.4.0",
@@ -31,5 +32,8 @@
     "typescript": "^2.7.2",
     "webpack": "2.2.1",
     "webpack-dev-server": "2.2.1"
+  },
+  "dependencies": {
+    "random-js": "^1.0.8"
   }
 }

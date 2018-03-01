@@ -15,6 +15,8 @@ export class Provider {
 }
 
 export enum Service {
+  RNG,
+  SOUND,
   PIPELINE,
   UI,
   GAME,

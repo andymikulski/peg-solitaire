@@ -22,7 +22,7 @@ export class GameTimer extends Transform implements Printable {
   }
 
   print(toContext: CanvasRenderingContext2D) {
-    toContext.font = '48px Bubblegum';
+    toContext.font = '48px Riffic';
     toContext.lineWidth = 2;
     toContext.lineCap = 'round';
 

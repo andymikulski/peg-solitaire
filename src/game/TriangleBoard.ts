@@ -1,4 +1,5 @@
 import GameBoard from './GameBoard';
+import { Provider, Service } from '../common/Provider';
 
 export default class TriangleGameBoard extends GameBoard {
   calculateBoardPosition(count: number) {
@@ -10,10 +11,12 @@ export default class TriangleGameBoard extends GameBoard {
   }
 
   calculatePegSize(count: number) {
-    this.size = 200 * Math.pow(count, -0.8302527);
+    return 200 * Math.pow(count, -0.8302527);
   }
 
   buildBoard() {
+    const rng = Provider.lookup(Service.RNG);
+
     this.map = [];
     const size = this.size;
     const middlePoint = Math.round((this.count * this.count) / 4);
@@ -22,7 +25,13 @@ export default class TriangleGameBoard extends GameBoard {
       this.map[y] = [];
       for (let x = y; x < this.count; x += 1) {
         idx += 1;
-        this.map[y][x] = (idx === middlePoint) ? this.createSlot(x, y) : this.createPeg(x, y);
+        if (y === this.count - 1 && x === this.count - 1) {
+          this.map[y][x] = this.createSlot(x, y);
+        } else {
+          const peg = this.createPeg(x, y);
+          this.map[y][x] = peg;
+          peg.health = rng.integer(0, 5) > 0 ? 1 : 2;
+        }
       }
     }
   }

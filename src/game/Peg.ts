@@ -5,15 +5,23 @@ import Transform from '../common/Transform';
 import { IInteractable } from '../input/InteractionLayer';
 
 export default class Peg extends Transform implements Printable, IInteractable {
-  public isSelected: boolean = false;
   static SelectPrerender: CanvasRenderingContext2D;
   static InactivePrerender: CanvasRenderingContext2D;
   static VCR: VCR;
-
+  // Padding to allow room for drop shadow (should probably _not_ be hardcoded)
   static renderPadding: number = 5;
 
+  // Game board coordinates (_not_ display coords)
   public x: number;
   public y: number;
+
+  // Is this peg in the 'selected' state? (for display purpsoses)
+  public isSelected: boolean = false;
+  private isHovered: boolean = false;
+
+
+  public health: number = 1;
+
 
   constructor(public width: number, public height: number) {
     super();
@@ -51,11 +59,21 @@ export default class Peg extends Transform implements Printable, IInteractable {
 
     ctx.arc(this.width / 2, this.width / 2, this.width / 2, 0, Math.PI * 2);
     ctx.fill();
-
   }
+
+  //
+
+
+
+
+
+  //
 
   print(toContext: CanvasRenderingContext2D, offset: Transform) {
     const preRender = this.isSelected ? Peg.SelectPrerender : Peg.InactivePrerender;
+    if (this.isHovered) {
+      toContext.globalAlpha = 0;
+    }
 
     toContext.drawImage(
       preRender.canvas,
@@ -69,11 +87,25 @@ export default class Peg extends Transform implements Printable, IInteractable {
       this.height + (Peg.renderPadding / 2),
     );
 
+    if (this.health <= 1) {
+      return;
+    }
+
+    toContext.font = `${this.width / 2}px Dimbo`;
+    toContext.fillStyle = 'white';
+    toContext.fillText(
+      this.health.toString(),
+      -5 + (this.width / 2) + offset.position[0] + this.position[0],
+      10 + (this.height / 2) + offset.position[1] + this.position[1]
+    );
+
   }
 
   onClick() { }
-  onMouseDown() { }
-  onMouseMove() { }
-  onMouseUp() { }
-  onRightClick() { }
+  onMouseEnter() {
+    this.isHovered = true;
+  }
+  onMouseLeave() {
+    this.isHovered = false;
+  }
 }

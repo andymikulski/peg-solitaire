@@ -4,6 +4,13 @@ export enum MOUSE_EVENT {
   MOVE = 'mousemove',
   DOWN = 'mousedown',
   UP = 'mouseup',
+  ENTER = 'mouseenter',
+  LEAVE = 'mouseleave'
+}
+
+export enum TOUCH_EVENT {
+  START = 'touchstart',
+  END = 'touchend',
 }
 
 export enum KEY_EVENT {
@@ -47,7 +54,7 @@ export default class ElementEventHandler {
     requestAnimationFrame(this.tick.bind(this));
   }
 
-  public on(event: MOUSE_EVENT | KEY_EVENT, cb: Function) {
+  public on(event: MOUSE_EVENT | KEY_EVENT | TOUCH_EVENT, cb: Function) {
     this.bindings[event] = this.bindings[event] || [];
     this.bindings[event].push(cb);
     this.registerEvent(event);

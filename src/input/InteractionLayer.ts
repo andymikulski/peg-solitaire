@@ -8,6 +8,8 @@ export interface IInteractable {
   onRightClick?: Function;
   onMouseDown?: Function;
   onMouseMove?: Function;
+  onMouseEnter?: Function;
+  onMouseLeave?: Function;
   onMouseUp?: Function;
 }
 
@@ -19,11 +21,9 @@ export default class InteractionLayer {
   pipeline: RenderingPipeline;
 
   constructor() {
-    Provider.register(Service.UI, this);
     this.pipeline = Provider.lookup(Service.PIPELINE);
 
     const canvas = this.pipeline.getCanvas();
-
 
     this.renderingCanvas = this.pipeline.getCanvas();
     this.handler = new ElementEventHandler(this.renderingCanvas);
@@ -49,6 +49,15 @@ export default class InteractionLayer {
     return this.getEntityAtPos.apply(this, this.getMouseEventCoords(evt));
   }
 
+  onMouseEnter(evt: MouseEvent) {
+    const ent = this.getEntitesAtEvent(evt);
+    ent && ent.onMouseEnter && ent.onMouseEnter(evt);
+  }
+
+  onMouseLeave(evt: MouseEvent) {
+    const ent = this.getEntitesAtEvent(evt);
+    ent && ent.onMouseLeave && ent.onMouseLeave(evt);
+  }
 
   onMouseMove(evt: MouseEvent) {
     const ent = this.getEntitesAtEvent(evt);
