@@ -9,7 +9,7 @@ interface VcrContext {
 export default class VirtualCanvasRenderer implements IRenderer {
     instances: any = {};
 
-    constructor(private height: number, private width: number) {
+    constructor(private width: number, private height: number) {
         if (height <= 0 || width <= 0) {
             throw new Error('VCR: Height and width must be greater than zero!');
         }

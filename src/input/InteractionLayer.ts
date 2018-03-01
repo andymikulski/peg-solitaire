@@ -100,4 +100,12 @@ export default class InteractionLayer {
     this.trackedInteractables.push(thing);
     this.trackedOffsets.push(offset);
   }
+
+  unregister(thing: Transform) {
+    const idx = this.trackedInteractables.findIndex(x => x === thing);
+    if (idx !== -1) {
+      this.trackedInteractables.splice(idx, 1);
+      this.trackedOffsets.splice(idx, 1);
+    }
+  }
 }

@@ -1,9 +1,11 @@
 import RenderingPipeline, { Printable } from './rendering/RenderingPipeline';
 import VCR from './rendering/VCR';
 import EntityManager from './EntityManager';
-import { TriangleGameBoard } from './game/GameBoard';
+import GameBoard from './game/GameBoard';
+import TriangleGameBoard from './game/TriangleBoard';
 import { Provider, Service } from './common/Provider';
 import InteractionLayer from './input/InteractionLayer';
+import { GameTimer } from './game/GameTimer';
 
 class PegSolitaire {
   pipeline: RenderingPipeline;
@@ -11,8 +13,9 @@ class PegSolitaire {
   unitSize: number;
   startTime: number;
   lastTime: number;
+  gameTimer: GameTimer;
 
-  gameBoard: TriangleGameBoard;
+  gameBoard: GameBoard;
 
   constructor() {
     this.pipeline = new RenderingPipeline(800, 600);
@@ -21,9 +24,8 @@ class PegSolitaire {
     this.pipeline.setBackground('#ececec');
 
     new InteractionLayer();
-    this.gameBoard = new TriangleGameBoard(10);
-
-    this.gameBoard.position = [200, 75];
+    const count = 5;
+    this.gameBoard = new TriangleGameBoard(count);
 
     this.pipeline.addRenderer(this.gameBoard);
 
@@ -32,14 +34,21 @@ class PegSolitaire {
 
     this.startTime = Date.now();
     this.lastTime = Date.now();
+
+    this.gameTimer = new GameTimer();
+    this.gameTimer.position[0] = 25;
+    this.gameTimer.position[1] = 600 - 25;
+    this.pipeline.addRenderer(this.gameTimer);
+
     this.gameLoop();
   }
 
   gameLoop() {
     const delta = (Date.now() - this.lastTime) / 1000;
+    const elapsed = (Date.now() - this.startTime) / 1000;
 
     // logic
-    this.gameBoard.update(delta);
+    this.gameTimer.update(delta, elapsed);
 
     requestAnimationFrame(this.gameLoop.bind(this));
     this.lastTime = Date.now();
