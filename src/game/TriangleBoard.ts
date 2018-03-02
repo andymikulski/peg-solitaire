@@ -54,24 +54,32 @@ export default class TriangleGameBoard extends GameBoard {
 
   getNeighboringPegs(peg: Peg): Peg[] {
     let thing;
-    let neighbors = [];
-    for (let ix = -1; ix <= 1; ix += 1) {
-      for (let iy = -1; iy <= 1; iy += 1) {
 
-        if ((ix === -1 && iy === -1)
-          || (ix === 1 && iy === 1)
-          || (ix === 0 || iy === 0)
-        ) { continue; }
+    // Kinda cheating to just use the relative coords, but time is limited
+    let neighbors = [
+      [1, 0],
+      [1, 1],
+      [0, 1],
+      [-1, 0],
+      [-1, -1],
+      [0, -1],
+    ];
 
-        thing = this.map[iy + peg.y] && this.map[iy + peg.y][ix + peg.x];
+    let found: Peg[] = [];
 
-        if (thing && thing instanceof Peg) {
-          neighbors.push(thing);
-        }
+    let currX;
+    let currY;
+    neighbors.map((coords: number[]) => {
+      currX = peg.x + coords[0];
+      currY = peg.y + coords[1];
+
+      thing = this.map[currY] && this.map[currY][currX];
+      if (thing && thing instanceof Peg) {
+        found.push(thing);
       }
-    }
+    });
 
-    return neighbors;
+    return found;
   }
 
   getPossibleMoves(peg: Peg): Slot[] {

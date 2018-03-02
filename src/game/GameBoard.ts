@@ -258,7 +258,6 @@ export default abstract class GameBoard extends Emitter implements Printable {
   }
 
   onPegClick(x: number, y: number, peg: Peg) {
-    console.log(x, y);
     const sound: SoundManager = ServiceProvider.lookup(Service.SOUND);
     if (!peg.isEnabled) {
       sound.play(GameSounds.DENY);
@@ -282,6 +281,7 @@ export default abstract class GameBoard extends Emitter implements Printable {
 
   checkGameOver() {
     if (this.pegs.length === 1) {
+      this.selectedPeg[0].isSelected = false;
       this.emit(GAME_EVENTS.WIN);
       return;
     }
@@ -289,6 +289,8 @@ export default abstract class GameBoard extends Emitter implements Printable {
     const hasMoves = !!this.pegs.find((p: Peg) => { return this.getPossibleMoves(p).length !== 0; });
 
     if (!hasMoves) {
+      this.selectedPeg[0].isSelected = false;
+      this.selectedPeg = null;
       this.emit(GAME_EVENTS.LOSE);
     }
   }

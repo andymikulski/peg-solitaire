@@ -1,4 +1,4 @@
-import ElementEventHandler, { MOUSE_EVENT } from './ElementEventHandler';
+import ElementEventHandler, { MOUSE_EVENT, TOUCH_EVENT } from './ElementEventHandler';
 import { ServiceProvider, Service } from '../common/Provider';
 import RenderingPipeline, { Printable } from '../rendering/RenderingPipeline';
 import Transform from '../common/Transform';
@@ -33,6 +33,8 @@ export default class InteractionLayer {
     this.handler.on(MOUSE_EVENT.CLICK, this.onClick.bind(this));
     this.handler.on(MOUSE_EVENT.R_CLICK, this.onRightClick.bind(this));
     this.handler.on(MOUSE_EVENT.MOVE, this.onMouseMove.bind(this));
+
+    // this.handler.on(TOUCH_EVENT.START, this.onClick.bind(this));
   }
 
   getMouseEventCoords(evt: MouseEvent) {
@@ -105,7 +107,7 @@ export default class InteractionLayer {
     return <any>found[0];
   }
 
-  register(thing: Transform, offset?: Transform) {
+  register(thing: Transform, offset: Transform = new Transform()) {
     this.trackedInteractables.push(thing);
     this.trackedOffsets.push(offset);
   }

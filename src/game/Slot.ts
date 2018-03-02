@@ -27,7 +27,7 @@ export default class Slot extends Transform implements Printable, IInteractable 
       let ctx = vcr.getContext('prerender');
 
       ctx.beginPath();
-      ctx.fillStyle = 'hsl(38.7, 0%, 82.9%)';
+      ctx.fillStyle = 'hsl(38.7, 0%, 80.9%)';
       ctx.arc(this.width / 2, (this.height / 2), this.width / 2, 0, Math.PI * 2);
       ctx.fill();
       ctx.closePath();

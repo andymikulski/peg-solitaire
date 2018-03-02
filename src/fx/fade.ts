@@ -13,7 +13,7 @@ export enum QuakeEvents {
   DONE = 'done',
 }
 
-export default class QuakeFX extends Emitter {
+export default class FadeFX extends Emitter {
   originalOffset: Transform;
   quakeOffset: Transform;
   timeStart: number;

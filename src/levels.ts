@@ -1,5 +1,5 @@
-import TriangleGameBoard from "./game/TriangleBoard";
-import SquareGameBoard from "./game/SquareBoard";
+import TriangleGameBoard from './game/TriangleBoard';
+import SquareGameBoard from './game/SquareBoard';
 
 export interface ILevelOptions {
   seed: string;
@@ -22,19 +22,19 @@ const LevelData: ILevelOptions[] = [
     percentRealStrong: 0,
   },
   {
-    seed: 'getting bigger',
-    board: TriangleGameBoard,
-    slots: [[5, 5]],
-    count: 6,
+    seed: 'switching up the board',
+    board: SquareGameBoard,
+    slots: [[0, 0]],
+    count: 4,
     percentExplosive: 0,
     percentStrong: 0,
     percentRealStrong: 0,
   },
   {
-    seed: 'switching up the board',
-    board: SquareGameBoard,
-    slots: [[0, 0]],
-    count: 4,
+    seed: 'getting bigger',
+    board: TriangleGameBoard,
+    slots: [[4, 0]],
+    count: 5,
     percentExplosive: 0,
     percentStrong: 0,
     percentRealStrong: 0,
@@ -55,19 +55,17 @@ const LevelData: ILevelOptions[] = [
     count: 6,
     percentExplosive: 0,
     percentStrong: 0.095,
-    percentRealStrong: 0,
+    percentRealStrong: 0.1,
   },
-
   {
-    seed: 'introducing explosion pegs',
+    seed: 'introducing exploding pegs',
     board: SquareGameBoard,
-    slots: [[3, 0]],
-    count: 4,
-    percentExplosive: 0.07,
+    slots: [[4, 0]],
+    count: 5,
+    percentExplosive: 0.025,
     percentStrong: 0,
     percentRealStrong: 0,
   },
-
   {
     seed: 'mixing explosion w/ strong pegs',
     board: TriangleGameBoard,
