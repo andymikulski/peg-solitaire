@@ -1,16 +1,16 @@
-export class Provider {
+export class ServiceProvider {
   static directory: { [serviceName: string]: any } = {};
 
   static register(service: Service, instance: any) {
-    if (Provider.directory.hasOwnProperty(service)) {
+    if (ServiceProvider.directory.hasOwnProperty(service)) {
       throw new Error(`Provider already has a service '${service}' registered.`);
     }
 
-    Provider.directory[service] = instance;
+    ServiceProvider.directory[service] = instance;
   }
 
   static lookup(service: Service): any {
-    return Provider.directory[service];
+    return ServiceProvider.directory[service];
   }
 }
 

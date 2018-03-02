@@ -1,5 +1,5 @@
 import ElementEventHandler, { MOUSE_EVENT } from './ElementEventHandler';
-import { Provider, Service } from '../common/Provider';
+import { ServiceProvider, Service } from '../common/Provider';
 import RenderingPipeline, { Printable } from '../rendering/RenderingPipeline';
 import Transform from '../common/Transform';
 
@@ -21,7 +21,7 @@ export default class InteractionLayer {
   pipeline: RenderingPipeline;
 
   constructor() {
-    this.pipeline = Provider.lookup(Service.PIPELINE);
+    this.pipeline = ServiceProvider.lookup(Service.PIPELINE);
 
     const canvas = this.pipeline.getCanvas();
 

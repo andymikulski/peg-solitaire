@@ -1,5 +1,7 @@
 import GameBoard from './GameBoard';
-import { Provider, Service } from '../common/Provider';
+import { ServiceProvider, Service } from '../common/Provider';
+import Peg from './Peg';
+import Slot from './Slot';
 
 export default class TriangleGameBoard extends GameBoard {
   calculateBoardPosition(count: number) {
@@ -15,6 +17,7 @@ export default class TriangleGameBoard extends GameBoard {
   }
 
   buildBoard() {
+    const rng = ServiceProvider.lookup(Service.RNG);
     this.map = [];
     const size = this.size;
     const middlePoint = Math.round((this.count * this.count) / 4);
@@ -26,7 +29,7 @@ export default class TriangleGameBoard extends GameBoard {
         if (y === this.count - 1 && x === this.count - 1) {
           this.map[y][x] = this.createSlot(x, y);
         } else {
-          const peg = this.createPeg(x, y);
+          const peg = this.createPeg(x, y, rng.bool(0.11));
           this.map[y][x] = peg;
         }
       }
@@ -42,6 +45,70 @@ export default class TriangleGameBoard extends GameBoard {
 
   validateDistance(distX: number, distY: number): boolean {
     return Math.abs(distX | distY) === this.distance;
+  }
+
+  getNeighboringPegs(peg: Peg): Peg[] {
+    let thing;
+    let neighbors = [];
+    for (let ix = -1; ix <= 1; ix += 1) {
+      for (let iy = -1; iy <= 1; iy += 1) {
+
+        if ((ix === -1 && iy === -1)
+          || (ix === 1 && iy === 1)
+          || (ix === 0 || iy === 0)
+        ) { continue; }
+
+        thing = this.map[iy + peg.y] && this.map[iy + peg.y][ix + peg.x];
+
+        if (thing && thing instanceof Peg) {
+          neighbors.push(thing);
+        }
+      }
+    }
+
+    return neighbors;
+  }
+
+  getPossibleMoves(peg: Peg): Slot[] {
+    // - look 2 up
+    //   - if it's a peg, continue
+    //    - if it's a slot, examine 1 up
+    //    - if one up is a peg, we have a move
+    // - look 2 left...
+
+    const neighboringMoves = [
+      [2, 0],
+      [2, 2],
+      [0, 2],
+      [-2, 0],
+      [-2, -2],
+      [0, -2],
+    ];
+
+    let currX;
+    let currY;
+    let thing;
+    let diffX;
+    let diffY;
+
+    let possibleMoves: Slot[] = [];
+
+    neighboringMoves.forEach(coords => {
+      currX = peg.x + coords[0];
+      currY = peg.y + coords[1];
+
+      thing = this.map[currY] && this.map[currY][currX];
+      if (thing && thing instanceof Slot) {
+        diffX = (currX - peg.x) / 2;
+        diffY = (currY - peg.y) / 2;
+
+        if (this.map[diffY] && this.map[diffY][diffX] instanceof Peg) {
+          possibleMoves.push(thing);
+        }
+      }
+    });
+
+    return possibleMoves;
   }
 }
 

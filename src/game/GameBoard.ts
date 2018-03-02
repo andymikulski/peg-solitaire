@@ -2,7 +2,7 @@ import VCR from '../rendering/VCR';
 import { Printable } from '../rendering/RenderingPipeline';
 import Transform from '../common/Transform';
 import Peg from './Peg';
-import { Provider, Service } from '../common/Provider';
+import { ServiceProvider, Service } from '../common/Provider';
 import InteractionLayer from '../input/InteractionLayer';
 import Slot from './Slot';
 import SoundManager from '../sounds/SoundManager';
@@ -32,8 +32,12 @@ export default abstract class GameBoard extends Transform implements Printable {
   abstract calculatePegPlacement(x: number, y: number): number[];
   abstract validateDistance(distX: number, distY: number): boolean;
 
+  abstract getPossibleMoves(peg: Peg): Slot[];
+
+  abstract getNeighboringPegs(peg: Peg): Peg[];
+
   createSlot(x: number, y: number) {
-    const ui: InteractionLayer = Provider.lookup(Service.UI);
+    const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
     const slot = new Slot(this.size, this.size);
     slot.position = this.calculatePegPlacement(x, y);
 
@@ -52,25 +56,26 @@ export default abstract class GameBoard extends Transform implements Printable {
     return slot;
   }
 
-  createPeg(x: number, y: number) {
-    const rng = Provider.lookup(Service.RNG);
-    const ui: InteractionLayer = Provider.lookup(Service.UI);
-    const isExplodingPeg = x === 3 && y === 2; //rng.bool(0.15);
+  createPeg(x: number, y: number, isExplodingPeg: boolean = false) {
+    const rng = ServiceProvider.lookup(Service.RNG);
+    const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
     const peg = new (isExplodingPeg ? ExplodingPeg : Peg)(this.size, this.size);
     peg.position = this.calculatePegPlacement(x, y);
 
-    peg.health = isExplodingPeg ? 0 : (rng.bool(0.2) ? (rng.bool(0.25) ? 3 : 2) : 1);
+    if (isExplodingPeg) {
+      peg.health = 0;
+    } else {
+      peg.health = rng.bool(0.2) ? (rng.bool(0.25) ? 3 : 2) : 1;
+    }
+
     peg.x = x;
     peg.y = y;
     peg.width = this.size;
     peg.height = this.size;
-    if (isExplodingPeg) {
-      peg.isEnabled = false;
-    } else {
-      peg.onClick = () => this.onPegClick(x, y, peg);
-      // Tell interaction layer to check this for click events.
-      ui.register(peg, this);
-    }
+    peg.onClick = () => this.onPegClick(x, y, peg);
+
+    // Tell interaction layer to check this for click events.
+    ui.register(peg, this);
 
     this.map[peg.y][peg.x] = peg;
     this.pegs.push(peg);
@@ -80,7 +85,7 @@ export default abstract class GameBoard extends Transform implements Printable {
 
   // Given a peg, creates a new slot in the same position.
   createSlotFromPeg(peg: Peg) {
-    const ui: InteractionLayer = Provider.lookup(Service.UI);
+    const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
     const slot = this.createSlot(peg.x, peg.y);
 
     ui.unregister(peg);
@@ -89,7 +94,7 @@ export default abstract class GameBoard extends Transform implements Printable {
   }
 
   createPegFromSlot(slot: Slot) {
-    const ui: InteractionLayer = Provider.lookup(Service.UI);
+    const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
     const peg = this.createPeg(slot.x, slot.y);
 
     ui.unregister(slot);
@@ -119,14 +124,14 @@ export default abstract class GameBoard extends Transform implements Printable {
   }
 
   removePeg(peg: Peg) {
-    const ui: InteractionLayer = Provider.lookup(Service.UI);
+    const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
 
     this.pegs = this.pegs.filter(x => x !== peg);
     ui.unregister(peg);
   }
 
   removeSlot(slot: Slot) {
-    const ui: InteractionLayer = Provider.lookup(Service.UI);
+    const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
 
     this.slots = this.slots.filter(x => x !== slot);
     ui.unregister(slot);
@@ -134,8 +139,8 @@ export default abstract class GameBoard extends Transform implements Printable {
 
   // ---
   onSlotClick(x: number, y: number, slot: Slot) {
-    const ui: InteractionLayer = Provider.lookup(Service.UI);
-    const sound: SoundManager = Provider.lookup(Service.SOUND);
+    const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
+    const sound: SoundManager = ServiceProvider.lookup(Service.SOUND);
 
     if (this.selectedPeg) {
       const pegX = this.selectedPeg[1];
@@ -171,23 +176,8 @@ export default abstract class GameBoard extends Transform implements Printable {
         this.createSlotFromPeg(delPeg);
         this.removePeg(delPeg);
 
-        // get delpeg neighbors
-
-        let thing;
-        let neighbors = [];
-        for (let ix = -1; ix <= 1; ix += 1) {
-          for (let iy = -1; iy <= 1; iy += 1) {
-
-            if ((ix === 1 && iy === -1)
-              || (ix === -1 && iy === 1)
-            ) { continue; }
-
-            thing = this.map[iy + delPeg.y][ix + delPeg.x];
-            if (thing instanceof Peg) {
-              neighbors.push(thing);
-            }
-          }
-        }
+        // Get delpeg neighbors (using board-specific method)
+        const neighbors = this.getNeighboringPegs(delPeg);
 
         // remove and/or expldoe them if necessary
         neighbors.forEach(neigh => {
@@ -220,7 +210,7 @@ export default abstract class GameBoard extends Transform implements Printable {
       }
 
 
-      this.checkWinCondition();
+      this.checkGameOver();
     }
   }
 
@@ -229,7 +219,7 @@ export default abstract class GameBoard extends Transform implements Printable {
       return;
     }
 
-    const sound: SoundManager = Provider.lookup(Service.SOUND);
+    const sound: SoundManager = ServiceProvider.lookup(Service.SOUND);
     sound.play('peg-select');
 
     if (this.selectedPeg) {
@@ -245,9 +235,16 @@ export default abstract class GameBoard extends Transform implements Printable {
     peg.isSelected = true;
   }
 
-  checkWinCondition() {
+  checkGameOver() {
     if (this.pegs.length === 1) {
-      alert('you win!');
+      alert('you win');
+      return;
+    }
+
+    const hasMoves = !!this.pegs.find((p: Peg) => { return this.getPossibleMoves(p).length !== 0; });
+
+    if (!hasMoves) {
+      alert('you lose!');
     }
   }
 

@@ -2,7 +2,7 @@ import VCR from '../rendering/VCR';
 import { Printable } from '../rendering/RenderingPipeline';
 import Transform from '../common/Transform';
 import Peg from './Peg';
-import { Provider, Service } from '../common/Provider';
+import { ServiceProvider, Service } from '../common/Provider';
 import InteractionLayer from '../input/InteractionLayer';
 import Slot from './Slot';
 

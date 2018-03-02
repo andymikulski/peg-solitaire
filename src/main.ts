@@ -1,8 +1,9 @@
 import RenderingPipeline, { Printable } from './rendering/RenderingPipeline';
 import VCR from './rendering/VCR';
 import GameBoard from './game/GameBoard';
+import SquareGameBoard from './game/SquareBoard';
 import TriangleGameBoard from './game/TriangleBoard';
-import { Provider, Service } from './common/Provider';
+import { ServiceProvider, Service } from './common/Provider';
 import InteractionLayer from './input/InteractionLayer';
 import { GameTimer } from './game/GameTimer';
 import SoundManager from './sounds/SoundManager';
@@ -20,16 +21,16 @@ class PegSolitaire {
 
   constructor() {
     this.pipeline = new RenderingPipeline(800, 600);
-    Provider.register(Service.PIPELINE, this.pipeline);
+    ServiceProvider.register(Service.PIPELINE, this.pipeline);
 
     this.pipeline.setBackground('#ececec');
 
     const ui = new InteractionLayer();
-    Provider.register(Service.UI, ui);
-    Provider.register(Service.RNG, provideRNG('silly seed'));
+    ServiceProvider.register(Service.UI, ui);
+    ServiceProvider.register(Service.RNG, provideRNG('silly string'));
 
     const sound = new SoundManager();
-    Provider.register(Service.SOUND, sound);
+    ServiceProvider.register(Service.SOUND, sound);
 
     const cachebust = Date.now();
     sound.load({
@@ -53,7 +54,8 @@ class PegSolitaire {
 
   startGame() {
     const count = 6;
-    this.gameBoard = new TriangleGameBoard(count);
+
+    this.gameBoard = new (Math.random() > 2 ? TriangleGameBoard : SquareGameBoard)(count);
 
     this.pipeline.addRenderer(this.gameBoard);
     this.startTime = Date.now();
