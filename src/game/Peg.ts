@@ -9,7 +9,7 @@ export default class Peg extends Transform implements Printable, IInteractable {
   static InactivePrerender: CanvasRenderingContext2D;
   static VCR: VCR;
   // Padding to allow room for drop shadow (should probably _not_ be hardcoded)
-  static renderPadding: number = 5;
+  static renderPadding: number = 10;
 
   public isEnabled: boolean = true;
 
@@ -29,7 +29,10 @@ export default class Peg extends Transform implements Printable, IInteractable {
     super();
 
     if (!Peg.SelectPrerender) {
-      Peg.VCR = new VCR(this.width + (Peg.renderPadding * 2), this.height + (Peg.renderPadding * 2));
+      const padding = this.width / 4;
+
+
+      Peg.VCR = new VCR(this.width + (padding * 2), this.height + (padding * 2));
       this.prerenderSelected();
       this.prerenderInactive();
     }
@@ -39,10 +42,10 @@ export default class Peg extends Transform implements Printable, IInteractable {
     Peg.SelectPrerender = Peg.VCR.getContext('select');
     const ctx = Peg.SelectPrerender;
 
-    ctx.shadowColor = 'hsl(75.9, 96.2%, 20.8%)';
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    ctx.shadowBlur = 1;
+    ctx.shadowColor = 'hsla(75.9, 96.2%, 20.8%, 0.6)';
+    ctx.shadowOffsetX = this.width / 20; //2;
+    ctx.shadowOffsetY = this.height / 20; //2;
+    ctx.shadowBlur = 0;
     ctx.fillStyle = '#97cc04';
 
     ctx.arc(this.width / 2, this.width / 2, this.width / 2, 0, Math.PI * 2);
@@ -53,10 +56,10 @@ export default class Peg extends Transform implements Printable, IInteractable {
     Peg.InactivePrerender = Peg.VCR.getContext('inactive');
     const ctx = Peg.InactivePrerender;
 
-    ctx.shadowColor = 'rgba(0, 107, 166, 1)';
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    ctx.shadowBlur = 1;
+    ctx.shadowColor = 'rgba(0, 107, 166, 0.8)';
+    ctx.shadowOffsetX = this.width / 10;
+    ctx.shadowOffsetY = this.height / 10;
+    ctx.shadowBlur = 0;
     ctx.fillStyle = '#0496ff';
 
     ctx.arc(this.width / 2, this.width / 2, this.width / 2, 0, Math.PI * 2);
@@ -65,13 +68,6 @@ export default class Peg extends Transform implements Printable, IInteractable {
 
   update(delta: number, elapsed: number) { }
 
-  //
-
-
-
-
-
-  //
 
   print(toContext: CanvasRenderingContext2D, offset: Transform) {
     const preRender = this.isSelected ? Peg.SelectPrerender : Peg.InactivePrerender;
@@ -79,16 +75,18 @@ export default class Peg extends Transform implements Printable, IInteractable {
       toContext.globalAlpha = 0;
     }
 
+    const padding = this.width / 4;
+
     toContext.drawImage(
       preRender.canvas,
       0,
       0,
-      this.width + (Peg.renderPadding / 2),
-      this.height + (Peg.renderPadding / 2),
+      this.width + padding,
+      this.height + padding,
       offset.position[0] + this.position[0],
       offset.position[1] + this.position[1],
-      this.width + (Peg.renderPadding / 2),
-      this.height + (Peg.renderPadding / 2),
+      this.width + padding,
+      this.height + padding,
     );
 
     if (this.health <= 1) {

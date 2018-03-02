@@ -20,4 +20,5 @@ export enum Service {
   PIPELINE,
   UI,
   GAME,
+  CLOCK,
 }

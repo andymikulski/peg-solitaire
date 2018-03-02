@@ -1,7 +1,7 @@
 // Only external lib used!
 import * as Random from 'random-js';
 
-// Converts a string into a 32bit integer. 
+// Converts a string into a 32bit integer.
 // via https://stackoverflow.com/a/8076436
 const hashCode = function (str: string) {
   var hash = 0;
@@ -11,8 +11,7 @@ const hashCode = function (str: string) {
     hash = hash & hash;
   }
   return hash;
-}
-
+};
 
 export default function provideRNG(seedStr: string) {
   const seedNum = hashCode(seedStr);

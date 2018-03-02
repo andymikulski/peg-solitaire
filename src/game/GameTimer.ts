@@ -7,7 +7,12 @@ import InteractionLayer from '../input/InteractionLayer';
 import Slot from './Slot';
 
 export class GameTimer extends Transform implements Printable {
-  elapsed: number;
+  elapsed: number = 0;
+
+  constructor() {
+    super();
+    ServiceProvider.lookup(Service.CLOCK).addBinding(this);
+  }
 
   formatTime(timeInSeconds: number) {
     const minutes = Math.floor(timeInSeconds / 60);

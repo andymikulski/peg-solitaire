@@ -29,7 +29,7 @@ export default class TriangleGameBoard extends GameBoard {
         if (y === this.count - 1 && x === this.count - 1) {
           this.map[y][x] = this.createSlot(x, y);
         } else {
-          const peg = this.createPeg(x, y, rng.bool(0.11));
+          const peg = this.createPeg(x, y, rng.bool(0.2));
           this.map[y][x] = peg;
         }
       }

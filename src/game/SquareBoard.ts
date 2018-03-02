@@ -30,7 +30,7 @@ export default class SquareGameBoard extends GameBoard {
       for (let x = 0; x < this.count; x += 1) {
         idx += 1;
 
-        this.map[y][x] = (idx === middlePoint) ? this.createSlot(x, y) : this.createPeg(x, y, rng.bool(0.05));
+        this.map[y][x] = (idx === middlePoint) ? this.createSlot(x, y) : this.createPeg(x, y, rng.bool(0.1));
       }
     }
   }
@@ -54,7 +54,7 @@ export default class SquareGameBoard extends GameBoard {
 
         if (ix === 0 && iy === 0) { continue; }
 
-        thing = this.map[iy + peg.y][ix + peg.x];
+        thing = this.map[iy + peg.y] && this.map[iy + peg.y][ix + peg.x];
 
         if (thing && thing instanceof Peg) {
           neighbors.push(thing);

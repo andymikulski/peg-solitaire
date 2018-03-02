@@ -1,5 +1,5 @@
 import IRenderer from './IRenderer';
-import VCR from './vcr';
+import VCR from './VCR';
 
 export default class CanvasRenderer implements IRenderer {
     canvas: HTMLCanvasElement;

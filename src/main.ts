@@ -8,79 +8,61 @@ import InteractionLayer from './input/InteractionLayer';
 import { GameTimer } from './game/GameTimer';
 import SoundManager from './sounds/SoundManager';
 import provideRNG from './common/RNG';
+import AssetManager, { GameSounds } from './AssetManager';
+import SplashScreen from './game/SplashScreen';
+import { GameClock } from './game/GameClock';
 
 class PegSolitaire {
   pipeline: RenderingPipeline;
 
   unitSize: number;
-  startTime: number;
-  lastTime: number;
   gameTimer: GameTimer;
 
   gameBoard: GameBoard;
 
   constructor() {
+    document.body.innerHTML = '';
     this.pipeline = new RenderingPipeline(800, 600);
+    this.pipeline.setBackground('#ececec');
     ServiceProvider.register(Service.PIPELINE, this.pipeline);
 
-    this.pipeline.setBackground('#ececec');
+    this.registerServices();
 
-    const ui = new InteractionLayer();
-    ServiceProvider.register(Service.UI, ui);
-    ServiceProvider.register(Service.RNG, provideRNG('silly string'));
+    const assMan = new AssetManager();
+    assMan.loadAssets();
 
-    const sound = new SoundManager();
-    ServiceProvider.register(Service.SOUND, sound);
-
-    const cachebust = Date.now();
-    sound.load({
-      'music': `sounds/xerxes.mp3?${cachebust}`,
-      'boom': `sounds/boom3.wav?${cachebust}`,
-      'deny': `sounds/cant-move.wav?${cachebust}`,
-      'peg-move': `sounds/peg-land-2.wav?${cachebust}`,
-      'peg-remove': `sounds/peg-removed.wav?${cachebust}`,
-      'peg-select': `sounds/peg-select.wav?${cachebust}`,
-    });
-
-    sound.play('music');
-    sound.setSoundVolume('music', 0.75);
-
-
-    document.body.innerHTML = '';
     document.body.appendChild(this.pipeline.getCanvas());
 
+    // this.pipeline.addRenderer(new SplashScreen(800, 600));
     this.startGame();
+
+
+    // const sound = ServiceProvider.lookup(Service.SOUND);
+    // sound.play(GameSounds.MUSIC);
+    // sound.setSoundVolume('music', 0.65);
+  }
+
+  registerServices() {
+    ServiceProvider.register(Service.RNG, provideRNG('silly string'));
+    ServiceProvider.register(Service.UI, new InteractionLayer());
+    ServiceProvider.register(Service.CLOCK, new GameClock());
   }
 
   startGame() {
-    const count = 6;
+    const count = 5;
 
     this.gameBoard = new (Math.random() > 2 ? TriangleGameBoard : SquareGameBoard)(count);
 
     this.pipeline.addRenderer(this.gameBoard);
-    this.startTime = Date.now();
-    this.lastTime = Date.now();
+
 
     this.gameTimer = new GameTimer();
     this.gameTimer.position[0] = 25;
     this.gameTimer.position[1] = 600 - 25;
     this.pipeline.addRenderer(this.gameTimer);
 
-    this.gameLoop();
+    ServiceProvider.lookup(Service.CLOCK).start();
   }
-
-  gameLoop() {
-    const delta = (Date.now() - this.lastTime) / 1000;
-    const elapsed = (Date.now() - this.startTime) / 1000;
-
-    // logic
-    this.gameTimer.update(delta, elapsed);
-    this.gameBoard.update(delta, elapsed);
-
-    requestAnimationFrame(this.gameLoop.bind(this));
-    this.lastTime = Date.now();
-  }
-
 }
 
 
