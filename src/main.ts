@@ -1,6 +1,6 @@
 import RenderingPipeline, { Printable } from './rendering/RenderingPipeline';
 import VCR from './rendering/VCR';
-import GameBoard from './game/GameBoard';
+import GameBoard, { GAME_EVENTS } from './game/GameBoard';
 import SquareGameBoard from './game/SquareBoard';
 import TriangleGameBoard from './game/TriangleBoard';
 import { ServiceProvider, Service } from './common/Provider';
@@ -11,6 +11,10 @@ import provideRNG from './common/RNG';
 import AssetManager, { GameSounds } from './AssetManager';
 import SplashScreen from './game/SplashScreen';
 import { GameClock } from './game/GameClock';
+import Peg from './game/Peg';
+import Slot from './game/Slot';
+
+import LevelData from './levels';
 
 class PegSolitaire {
   pipeline: RenderingPipeline;
@@ -49,19 +53,46 @@ class PegSolitaire {
   }
 
   startGame() {
-    const count = 5;
-
-    this.gameBoard = new (Math.random() > 2 ? TriangleGameBoard : SquareGameBoard)(count);
-
-    this.pipeline.addRenderer(this.gameBoard);
-
-
     this.gameTimer = new GameTimer();
     this.gameTimer.position[0] = 25;
     this.gameTimer.position[1] = 600 - 25;
     this.pipeline.addRenderer(this.gameTimer);
 
-    ServiceProvider.lookup(Service.CLOCK).start();
+    const nextMap = () => {
+      if (this.gameBoard) {
+        this.gameBoard.cleanupGame();
+        this.pipeline.removeRenderer(this.gameBoard);
+      }
+
+      // Need to clear the cache so pegs can redraw at the proper size
+      Peg.clearRenderCache();
+      Slot.clearRenderCache();
+
+      const nextLevel = LevelData.shift();
+
+
+      ServiceProvider.unregister(Service.RNG);
+      ServiceProvider.register(Service.RNG, provideRNG(nextLevel.seed))
+
+      const { board } = nextLevel;
+      this.gameBoard = new board(nextLevel);
+      this.pipeline.addRenderer(this.gameBoard);
+      this.gameBoard.on(GAME_EVENTS.LOSE, () => {
+        this.gameBoard.disableAllPegs();
+        this.gameTimer.disable();
+        setTimeout(nextMap.bind(this), 5000);
+      });
+      this.gameBoard.on(GAME_EVENTS.WIN, () => {
+        this.gameBoard.disableAllPegs();
+        this.gameTimer.disable();
+        setTimeout(nextMap.bind(this), 5000);
+      });
+      ServiceProvider.lookup(Service.CLOCK).start();
+      this.gameTimer.enable();
+    };
+
+
+    nextMap();
   }
 }
 

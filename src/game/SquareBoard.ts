@@ -11,7 +11,7 @@ export default class SquareGameBoard extends GameBoard {
     const boardX = 297.2097 * Math.pow(count, -0.2192493);
     const boardY = 202.4127 * Math.pow(count, -0.5205111);
 
-    this.position = [boardX, boardY];
+    this.transform.position = [boardX, boardY];
   }
 
   calculatePegSize(count: number): number {
@@ -19,18 +19,20 @@ export default class SquareGameBoard extends GameBoard {
   }
 
   buildBoard() {
+    const { settings } = this;
     const rng = ServiceProvider.lookup(Service.RNG);
     this.map = [];
     const size = this.size;
 
-    const middlePoint = Math.round((this.count * this.count) / 2);
-    let idx = 0;
-    for (let y = 0; y < this.count; y += 1) {
-      this.map[y] = [];
-      for (let x = 0; x < this.count; x += 1) {
-        idx += 1;
+    const slots = settings.slots.map((pt: number[]) => pt.join(','));
 
-        this.map[y][x] = (idx === middlePoint) ? this.createSlot(x, y) : this.createPeg(x, y, rng.bool(0.1));
+    for (let y = 0; y < settings.count; y += 1) {
+      this.map[y] = [];
+      for (let x = 0; x < settings.count; x += 1) {
+
+        const isPredeterminedSlot = !!slots.find((slot: string) => slot === `${x},${y}`);
+
+        this.map[y][x] = isPredeterminedSlot ? this.createSlot(x, y) : this.createPeg(x, y, rng.bool(settings.percentExplosive));
       }
     }
   }

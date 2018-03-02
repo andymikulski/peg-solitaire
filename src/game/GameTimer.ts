@@ -9,17 +9,19 @@ import Slot from './Slot';
 export class GameTimer extends Transform implements Printable {
   elapsed: number = 0;
 
-  constructor() {
-    super();
-    ServiceProvider.lookup(Service.CLOCK).addBinding(this);
-  }
-
   formatTime(timeInSeconds: number) {
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = timeInSeconds % 60;
 
 
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  }
+
+  enable() {
+    ServiceProvider.lookup(Service.CLOCK).addBinding(this);
+  }
+  disable() {
+    ServiceProvider.lookup(Service.CLOCK).removeBinding(this);
   }
 
   update(delta: number, elapsed: number) {

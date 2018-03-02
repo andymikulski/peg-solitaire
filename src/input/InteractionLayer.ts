@@ -117,4 +117,9 @@ export default class InteractionLayer {
       this.trackedOffsets.splice(idx, 1);
     }
   }
+
+  unregisterAll() {
+    this.trackedInteractables = [];
+    this.trackedOffsets = [];
+  }
 }

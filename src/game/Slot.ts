@@ -11,6 +11,12 @@ export default class Slot extends Transform implements Printable, IInteractable 
   static Prerender: CanvasRenderingContext2D;
   static FocusPrerender: CanvasRenderingContext2D;
 
+  static clearRenderCache() {
+    Slot.Prerender = null;
+    Slot.FocusPrerender = null;
+  }
+
+
   public isFocused: boolean = false;
 
   constructor(public width: number, public height: number) {

@@ -16,10 +16,7 @@ export class GameClock {
 
   addBinding(entity: ILoopable) {
     if (!this.bindings.find(x => x === entity)) {
-      console.log('addddd');
       this.bindings.push(entity);
-    } else {
-      console.log('arasdf', entity, this.bindings);
     }
   }
 

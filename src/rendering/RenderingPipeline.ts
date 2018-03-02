@@ -60,6 +60,10 @@ export default class RenderingPipeline {
         }
     }
 
+    public removeRenderer(renderer: Printable) {
+        this.renderers = this.renderers.filter(x => x !== renderer);
+    }
+
     public getLayerForRenderer(renderer: Printable) {
         let i = 0;
         while (i < this.renderers.length) {

@@ -8,22 +8,32 @@ import Slot from './Slot';
 import SoundManager from '../sounds/SoundManager';
 import ExplodingPeg from './ExplodingPeg';
 import { GameSounds } from '../AssetManager';
-import QuakeFX from '../fx/quake';
+import QuakeFX, { QuakeOverTime, QuakeEvents } from '../fx/quake';
+import Emitter from '../common/Emitter';
+import { ILevelOptions } from '../levels';
 
-export default abstract class GameBoard extends Transform implements Printable {
+export enum GAME_EVENTS {
+  WIN = 'win',
+  LOSE = 'lose',
+}
+
+export default abstract class GameBoard extends Emitter implements Printable {
   map: any;
   slots: Slot[] = [];
   pegs: Peg[] = [];
   size: number;
   distance: number = 2;
+  transform: Transform;
 
   selectedPeg: [Peg, number, number];
 
-  constructor(protected count: number = 5) {
+  constructor(protected settings: ILevelOptions) {
     super();
 
-    this.calculateBoardPosition(this.count);
-    this.size = this.calculatePegSize(this.count);
+    this.transform = new Transform();
+
+    this.calculateBoardPosition(this.settings.count);
+    this.size = this.calculatePegSize(this.settings.count);
 
     this.buildBoard();
   }
@@ -33,9 +43,7 @@ export default abstract class GameBoard extends Transform implements Printable {
   abstract calculatePegSize(count: number): number;
   abstract calculatePegPlacement(x: number, y: number): number[];
   abstract validateDistance(distX: number, distY: number): boolean;
-
   abstract getPossibleMoves(peg: Peg): Slot[];
-
   abstract getNeighboringPegs(peg: Peg): Peg[];
 
   updateSelectedPeg(newPeg?: Peg) {
@@ -67,12 +75,13 @@ export default abstract class GameBoard extends Transform implements Printable {
     this.slots.push(slot);
 
     // Tell interaction layer to check this for click events.
-    ui.register(slot, this);
+    ui.register(slot, this.transform);
 
     return slot;
   }
 
   createPeg(x: number, y: number, isExplodingPeg: boolean = false) {
+    const { settings } = this;
     const rng = ServiceProvider.lookup(Service.RNG);
     const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
     const peg = new (isExplodingPeg ? ExplodingPeg : Peg)(this.size, this.size);
@@ -81,7 +90,9 @@ export default abstract class GameBoard extends Transform implements Printable {
     if (isExplodingPeg) {
       peg.health = 0;
     } else {
-      peg.health = rng.bool(0.2) ? (rng.bool(0.25) ? 3 : 2) : 1;
+      // This is overwritten later when pegs bounce around,
+      // so it works, though it's a little gross.
+      peg.health = rng.bool(settings.percentStrong) ? (rng.bool(settings.percentRealStrong) ? 3 : 2) : 1;
     }
 
     peg.x = x;
@@ -91,7 +102,7 @@ export default abstract class GameBoard extends Transform implements Printable {
     peg.onClick = () => this.onPegClick(x, y, peg);
 
     // Tell interaction layer to check this for click events.
-    ui.register(peg, this);
+    ui.register(peg, this.transform);
 
     this.map[peg.y][peg.x] = peg;
     this.pegs.push(peg);
@@ -105,7 +116,7 @@ export default abstract class GameBoard extends Transform implements Printable {
     const slot = this.createSlot(peg.x, peg.y);
 
     ui.unregister(peg);
-    ui.register(slot, this);
+    ui.register(slot, this.transform);
     return slot;
   }
 
@@ -114,7 +125,7 @@ export default abstract class GameBoard extends Transform implements Printable {
     const peg = this.createPeg(slot.x, slot.y);
 
     ui.unregister(slot);
-    ui.register(peg, this);
+    ui.register(peg, this.transform);
     return peg;
   }
 
@@ -131,11 +142,11 @@ export default abstract class GameBoard extends Transform implements Printable {
 
   print(toContext: CanvasRenderingContext2D) {
     this.slots.forEach(slot => {
-      slot.print(toContext, this);
+      slot.print(toContext, this.transform);
     });
 
     this.pegs.forEach(peg => {
-      peg.print(toContext, this);
+      peg.print(toContext, this.transform);
     });
   }
 
@@ -193,9 +204,11 @@ export default abstract class GameBoard extends Transform implements Printable {
       if (isJumpedPegExploding) {
         this.createSlotFromPeg(delPeg);
         sound.play(GameSounds.HISS);
-        const pegQuake = new QuakeFX(delPeg, 5, 200, 0);
-        pegQuake.on('done', () => {
-          new QuakeFX(this, 4, 300);
+        const pegQuake = new QuakeFX(delPeg, 5, 200, QuakeOverTime.ASC);
+
+        // Callbacks are still cool, right?
+        pegQuake.on(QuakeEvents.DONE, () => {
+          new QuakeFX(this.transform, 4, 300);
           this.removePeg(delPeg);
 
           // Get delpeg neighbors (using board-specific method)
@@ -211,8 +224,9 @@ export default abstract class GameBoard extends Transform implements Printable {
           });
           this.selectedPeg[0].health -= 1;
 
-
           sound.play(GameSounds.BOOM);
+
+          this.checkGameOver();
         });
       } else {
         delPeg.health -= 1;
@@ -267,14 +281,32 @@ export default abstract class GameBoard extends Transform implements Printable {
 
   checkGameOver() {
     if (this.pegs.length === 1) {
-      console.log('you win');
+      this.emit(GAME_EVENTS.WIN);
       return;
     }
 
     const hasMoves = !!this.pegs.find((p: Peg) => { return this.getPossibleMoves(p).length !== 0; });
 
     if (!hasMoves) {
-      console.log('you lose!');
+      this.emit(GAME_EVENTS.LOSE);
     }
+  }
+
+  cleanupGame() {
+    this.disableAllPegs();
+    const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
+
+    // Ideally this would only unregister the pegs/slots on this board..
+    ui.unregisterAll();
+
+    this.slots = [];
+    this.pegs = [];
+  }
+
+  disableAllPegs() {
+    this.pegs.forEach(x => x.isEnabled = false);
+  }
+  enableAllPegs() {
+    this.pegs.forEach(x => x.isEnabled = x instanceof Peg);
   }
 }

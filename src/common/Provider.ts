@@ -9,6 +9,10 @@ export class ServiceProvider {
     ServiceProvider.directory[service] = instance;
   }
 
+  static unregister(service: Service) {
+    delete ServiceProvider.directory[service];
+  }
+
   static lookup(service: Service): any {
     return ServiceProvider.directory[service];
   }

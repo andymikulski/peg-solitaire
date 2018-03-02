@@ -9,7 +9,7 @@ export default class TriangleGameBoard extends GameBoard {
     const boardX = 194.4171 + (5.681169 * count) - (1.125676 * Math.pow(count, 2)) + (0.03652708 * Math.pow(count, 3));
     const boardY = 210.4402 * Math.pow(count, -0.3913894);
 
-    this.position = [boardX, boardY];
+    this.transform.position = [boardX, boardY];
   }
 
   calculatePegSize(count: number) {
@@ -17,19 +17,24 @@ export default class TriangleGameBoard extends GameBoard {
   }
 
   buildBoard() {
+    const { settings } = this;
     const rng = ServiceProvider.lookup(Service.RNG);
     this.map = [];
     const size = this.size;
-    const middlePoint = Math.round((this.count * this.count) / 4);
-    let idx = 0;
-    for (let y = 0; y < this.count; y += 1) {
+    const middlePoint = Math.round((settings.count * settings.count) / 4);
+
+    const slotCoords = settings.slots.map((pt: number[]) => pt.join(','));
+
+    for (let y = 0; y < settings.count; y += 1) {
       this.map[y] = [];
-      for (let x = y; x < this.count; x += 1) {
-        idx += 1;
-        if (y === this.count - 1 && x === this.count - 1) {
+      for (let x = y; x < settings.count; x += 1) {
+
+        const isPredeterminedSlot = !!slotCoords.find((coords: string) => coords === `${x},${y}`);
+
+        if (isPredeterminedSlot) {
           this.map[y][x] = this.createSlot(x, y);
         } else {
-          const peg = this.createPeg(x, y, rng.bool(0.2));
+          const peg = this.createPeg(x, y, rng.bool(settings.percentExplosive));
           this.map[y][x] = peg;
         }
       }

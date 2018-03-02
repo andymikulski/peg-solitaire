@@ -4,12 +4,21 @@ import Transform from '../common/Transform';
 import Emitter from '../common/Emitter';
 
 
+export enum QuakeOverTime {
+  ASC = 0, // Quake gradually gets stronger as it approaches time limit
+  DESC = -1, // Quake starts strong, gradually settles back to position (default)
+}
+
+export enum QuakeEvents {
+  DONE = 'done',
+}
+
 export default class QuakeFX extends Emitter {
   originalOffset: Transform;
   quakeOffset: Transform;
   timeStart: number;
 
-  constructor(private target: Transform, private amount: number, private durationMs: number, private dir: -1 | 0 = -1) {
+  constructor(private target: Transform, private amount: number, private durationMs: number, private dir: QuakeOverTime = QuakeOverTime.DESC) {
     super();
     <GameClock>ServiceProvider.lookup(Service.CLOCK).addBinding(this);
 
@@ -32,7 +41,7 @@ export default class QuakeFX extends Emitter {
 
     if (shakeDuration >= this.durationMs) {
       <GameClock>ServiceProvider.lookup(Service.CLOCK).removeBinding(this);
-      this.emit('done');
+      this.emit(QuakeEvents.DONE);
     }
   }
 }
