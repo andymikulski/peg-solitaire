@@ -104,8 +104,8 @@ export default class TriangleGameBoard extends GameBoard {
 
       thing = this.map[currY] && this.map[currY][currX];
       if (thing && thing instanceof Slot) {
-        diffX = (currX - peg.x) / 2;
-        diffY = (currY - peg.y) / 2;
+        diffX = peg.x + (coords[0] / 2);
+        diffY = peg.y + (coords[1] / 2);
 
         if (this.map[diffY] && this.map[diffY][diffX] instanceof Peg) {
           possibleMoves.push(thing);

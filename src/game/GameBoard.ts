@@ -258,6 +258,7 @@ export default abstract class GameBoard extends Emitter implements Printable {
   }
 
   onPegClick(x: number, y: number, peg: Peg) {
+    console.log(x, y);
     const sound: SoundManager = ServiceProvider.lookup(Service.SOUND);
     if (!peg.isEnabled) {
       sound.play(GameSounds.DENY);
