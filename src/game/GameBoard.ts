@@ -183,9 +183,11 @@ export default abstract class GameBoard extends Emitter implements Printable {
         }
       });
 
-      this.selectedPeg[0].health -= 1;
-      if (this.selectedPeg[0].health <= 0) {
-        this.updateSelectedPeg();
+      if (this.selectedPeg) {
+        this.selectedPeg[0].health -= 1;
+        if (this.selectedPeg[0].health <= 0) {
+          this.updateSelectedPeg();
+        }
       }
 
       sound.play(GameSounds.BOOM);
@@ -297,6 +299,7 @@ export default abstract class GameBoard extends Emitter implements Printable {
   onPegClick(x: number, y: number, peg: Peg) {
     const sound: SoundManager = ServiceProvider.lookup(Service.SOUND);
     if (!peg.isEnabled) {
+      new QuakeEffect(peg, 1, 300);
       sound.play(GameSounds.DENY);
       return;
     }

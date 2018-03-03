@@ -20,7 +20,7 @@ export default class SplashScreen extends Emitter implements Printable {
       label: 'Start Game',
       callback: () => this.emit(SplashScreenEvents.START),
       x: (this.width / 2) - (185 / 2),
-      y: this.height * 0.7,
+      y: this.height * 0.585,
       width: 185,
       height: 48,
     }].forEach(buttonConfig => {
@@ -42,17 +42,23 @@ export default class SplashScreen extends Emitter implements Printable {
   }
 
   print(toContext: CanvasRenderingContext2D) {
-    toContext.font = '48px Riffic';
     toContext.lineWidth = 2;
     toContext.lineCap = 'round';
 
     toContext.strokeStyle = '#474647';
+    toContext.fillStyle = 'rgb(4, 150, 255)';
+    toContext.textAlign = 'center';
+    toContext.font = '72px Riffic';
+    toContext.fillText(`Peg Solitaire`, this.width / 2, 275);
+
+    toContext.globalCompositeOperation = 'multiply';
+    toContext.fillStyle = `rgba(4, 150, 255, 0.05)`;
+    toContext.fillRect(0, 175, 800, 150);
+
     toContext.fillStyle = '#474647';
+    toContext.font = '28px Dimbo';
     toContext.textAlign = 'center';
-    toContext.fillText(`Peg Solitaire`, this.width / 2, 100);
-    toContext.font = '24px Dimbo';
-    toContext.textAlign = 'center';
-    toContext.fillText(`By Andy Mikulski`, this.width / 2, 150);
+    toContext.fillText(`Game by Andy Mikulski`, this.width / 2, 600 - 20);
 
     this.buttons.forEach(button => button.print(toContext));
   }

@@ -151,10 +151,11 @@ class PegSolitaire {
     this.pipeline.addRenderer(this.scoreDisplay);
 
     this.restartButton = new Button('RESTART LEVEL', this.onRestartClick.bind(this));
-    this.restartButton.position[0] = 670;
+    this.restartButton.position[0] = 650;
     this.restartButton.position[1] = 25;
-    this.restartButton.height = 20;
-    this.restartButton.width = 105;
+    this.restartButton.height = 25;
+    this.restartButton.paddingFactor = 0.2;
+    this.restartButton.width = 125;
     this.attachRestartButton();
   }
 
