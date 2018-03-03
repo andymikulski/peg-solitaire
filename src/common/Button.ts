@@ -27,8 +27,10 @@ export class Button extends Transform implements Printable {
   }
 
   print(toContext: CanvasRenderingContext2D) {
-    toContext.fillStyle = 'rgba(71, 70, 71, 0.1)';
-    toContext.fillRect(this.position[0] - 25, this.position[1] + 25, this.width - 25, this.height + 25)
+    // No idea why this formula works, but hey!
+    const padding = (this.width * this.height) / 1000;
+    toContext.strokeStyle = 'rgba(71, 70, 71, 0.1)';
+    toContext.strokeRect(this.position[0] - (padding / 2), this.position[1] + (padding / 2), this.width + padding, this.height + padding);
 
     toContext.font = `${this.height}px Dimbo`;
     toContext.lineWidth = 2;

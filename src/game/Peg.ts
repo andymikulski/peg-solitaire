@@ -75,7 +75,6 @@ export default class Peg extends Transform implements Printable, IInteractable {
 
   update(delta: number, elapsed: number) { }
 
-
   print(toContext: CanvasRenderingContext2D, offset: Transform) {
     const preRender = this.isSelected ? Peg.SelectPrerender : Peg.InactivePrerender;
     if (this.isHovered) {

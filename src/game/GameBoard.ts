@@ -8,17 +8,19 @@ import Slot from './Slot';
 import SoundManager from '../sounds/SoundManager';
 import ExplodingPeg from './ExplodingPeg';
 import { GameSounds } from '../AssetManager';
-import QuakeFX, { QuakeOverTime, QuakeEvents } from '../fx/quake';
+import QuakeEffect, { QuakeOverTime, QuakeEvents } from '../fx/quake';
 import Emitter from '../common/Emitter';
 import { ILevelOptions } from '../levels';
 import { IGameInfo } from '../main';
+import FloatingText from '../fx/FloatingText';
+
+const fartknocker = 2;
 
 export enum GAME_EVENTS {
   PEG_JUMPED = 'peg-jumped',
   PEG_EXPLODED = 'peg-exploded',
   GAME_OVER = 'game-over',
-};
-
+}
 
 export default abstract class GameBoard extends Emitter implements Printable {
   map: any;
@@ -29,6 +31,7 @@ export default abstract class GameBoard extends Emitter implements Printable {
   transform: Transform;
 
   selectedPeg: [Peg, number, number];
+  consecutiveJumps: number = -1;
 
   constructor(protected settings: ILevelOptions) {
     super();
@@ -53,8 +56,10 @@ export default abstract class GameBoard extends Emitter implements Printable {
     this.slots.forEach(x => x.isFocused = false);
 
     if (!newPeg) {
+      this.consecutiveJumps = -1;
       return;
     }
+
     this.selectedPeg = [newPeg, newPeg.x, newPeg.y];
     newPeg.isSelected = true;
     const options = this.getPossibleMoves(newPeg);
@@ -203,15 +208,16 @@ export default abstract class GameBoard extends Emitter implements Printable {
 
       const isJumpedPegExploding = delPeg instanceof ExplodingPeg;
 
+      this.consecutiveJumps += 1;
 
       if (isJumpedPegExploding) {
         this.createSlotFromPeg(delPeg);
         sound.play(GameSounds.HISS);
-        const pegQuake = new QuakeFX(delPeg, 5, 200, QuakeOverTime.ASC);
+        const pegQuake = new QuakeEffect(delPeg, 5, 200, QuakeOverTime.ASC);
 
         // Callbacks are still cool, right?
         pegQuake.on(QuakeEvents.DONE, () => {
-          new QuakeFX(this.transform, 4, 300);
+          new QuakeEffect(this.transform, 4, 300);
           this.removePeg(delPeg);
 
           // Get delpeg neighbors (using board-specific method)
@@ -220,7 +226,6 @@ export default abstract class GameBoard extends Emitter implements Printable {
           // remove and/or expldoe them if necessary
           neighbors.forEach(neigh => {
             neigh.health -= 1;
-
             if (neigh.health <= 0) {
               this.createSlotFromPeg(neigh);
               this.removePeg(neigh);
@@ -230,13 +235,41 @@ export default abstract class GameBoard extends Emitter implements Printable {
 
           sound.play(GameSounds.BOOM);
 
-          this.emit(GAME_EVENTS.PEG_EXPLODED);
+          const coords = this.calculatePegPlacement(delPeg.x, delPeg.y);
+          new FloatingText(
+            // #todo this shouldn't know what the scoring is worth
+            // (score handling should probably be its own service)
+            `+3`,
+            // ---
+            24,
+            [
+              coords[0] + this.transform.position[0] + (delPeg.width / 1.75),
+              coords[1] + this.transform.position[1] + (delPeg.height / 4),
+            ],
+            25, 1000
+          );
+
+          this.emit(GAME_EVENTS.PEG_EXPLODED, this.consecutiveJumps);
 
           this.checkGameOver();
         });
       } else {
         delPeg.health -= 1;
-        this.emit(GAME_EVENTS.PEG_JUMPED);
+        this.emit(GAME_EVENTS.PEG_JUMPED, this.consecutiveJumps);
+
+
+        if (this.consecutiveJumps > 0) {
+          const coords = this.calculatePegPlacement(delPeg.x, delPeg.y);
+          new FloatingText(
+            `+${this.consecutiveJumps + 1}`,
+            24,
+            [
+              coords[0] + this.transform.position[0] + (delPeg.width / 1.75),
+              coords[1] + this.transform.position[1] + (delPeg.height / 4),
+            ],
+            25, 1000
+          );
+        }
 
         if (delPeg.health <= 0) {
           this.createSlotFromPeg(delPeg);
@@ -253,7 +286,7 @@ export default abstract class GameBoard extends Emitter implements Printable {
         this.updateSelectedPeg(newPeg);
 
         if (!isJumpedPegExploding) {
-          sound.play(delPeg.health <= 0 ? GameSounds.PEG_REMOVE : GameSounds.PEG_MOVE);
+          sound.play(delPeg.health <= 0 ? GameSounds.PEG_REMOVE : GameSounds.PEG_HIT);
         }
       } else {
         this.updateSelectedPeg();
@@ -283,6 +316,7 @@ export default abstract class GameBoard extends Emitter implements Printable {
       }
     }
 
+    this.consecutiveJumps = -1;
     this.updateSelectedPeg(peg);
   }
 
@@ -313,10 +347,8 @@ export default abstract class GameBoard extends Emitter implements Printable {
 
         if (this.pegs.length > 1) {
           this.pegs.forEach((peg: Peg, idx: number) => {
-            // setTimeout(() => {
-            new QuakeFX(peg, 2, 300);
-            // }, idx * (20 / this.pegs.length));
-          })
+            new QuakeEffect(peg, 1.5, 300);
+          });
         }
       }, 350);
 
@@ -354,6 +386,7 @@ export default abstract class GameBoard extends Emitter implements Printable {
     // Ideally this would only unregister the pegs/slots on this board..
     ui.unregisterAll();
 
+    this.consecutiveJumps = -1;
     this.slots = [];
     this.pegs = [];
   }

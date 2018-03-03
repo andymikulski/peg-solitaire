@@ -12,7 +12,7 @@ import { IGameInfo } from '../main';
 export enum InterstitialEvents {
   NEXT_LEVEL = 'next-level',
   RESTART_CURRENT = 'restart-current',
-};
+}
 
 export default class InterstitialScreen extends Emitter implements Printable {
   buttons: Button[] = [];
@@ -84,8 +84,8 @@ export default class InterstitialScreen extends Emitter implements Printable {
       label: didUserWin ? 'Play Again' : 'Retry',
       callback: () => this.emit(InterstitialEvents.RESTART_CURRENT),
       x: didUserWin ? 125 : 345,
-      y: this.height * 0.75,
-      width: didUserWin ? 50 : 90,
+      y: didUserWin ? this.height * 0.775 : this.height * 0.75,
+      width: didUserWin ? 110 : 90,
       height: didUserWin ? 32 : 48,
     }].forEach(buttonConfig => {
       if (!buttonConfig.condition) {

@@ -37,7 +37,7 @@ class PegSolitaire {
   interstitial: InterstitialScreen;
   restartButton: Button;
 
-  currentLevel: number = 0;
+  currentLevel: number = 5;
   levelScore: number = 0;
   totalScore: number = 0;
 
@@ -219,8 +219,12 @@ class PegSolitaire {
     this.pipeline.addRenderer(this.gameBoard);
 
     this.gameBoard.on(GAME_EVENTS.GAME_OVER, this.onRoundEnd.bind(this));
-    this.gameBoard.on(GAME_EVENTS.PEG_JUMPED, this.onPlayerScore(1));
-    this.gameBoard.on(GAME_EVENTS.PEG_EXPLODED, this.onPlayerScore(3));
+    this.gameBoard.on(GAME_EVENTS.PEG_JUMPED, (consecutiveCount: number) => {
+      this.onPlayerScore(1 + consecutiveCount);
+    });
+    this.gameBoard.on(GAME_EVENTS.PEG_EXPLODED, (consecutiveCount: number) => {
+      this.onPlayerScore(3);
+    });
 
     // Begin the timer after the first peg has moved
     this.gameBoard.once(GAME_EVENTS.PEG_JUMPED, () => {
@@ -231,10 +235,10 @@ class PegSolitaire {
   }
 
   onPlayerScore(amount: number) {
-    return () => {
-      this.levelScore += amount;
-      this.updateScoreDisplay(this.levelScore);
-    };
+    // return () => {
+    this.levelScore += amount;
+    this.updateScoreDisplay(this.levelScore);
+    // };
   }
 
   updateScoreDisplay(score: number) {
