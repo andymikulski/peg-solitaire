@@ -34,9 +34,13 @@ export default class SoundManager {
     }
   }
 
-  play(soundName: GameSounds) {
-    if (this.loadedSounds[soundName]) {
-      this.loadedSounds[soundName].play();
+  play(soundName: GameSounds, loop: boolean = false) {
+    const soundInfo: HTMLAudioElement = this.loadedSounds[soundName];
+    if (soundInfo) {
+      soundInfo.play();
+      if (loop) {
+        soundInfo.onended = soundInfo.play.bind(soundInfo);
+      }
     }
   }
 }

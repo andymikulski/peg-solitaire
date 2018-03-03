@@ -10,14 +10,12 @@ export enum GameSounds {
   PEG_REMOVE,
   PEG_SELECT,
   ROUND_END,
+  CLICK,
 }
 
 const cachebust = Date.now();
-export const SoundInfo: { [soundName: string]: any } = {
-  [GameSounds.MUSIC]: {
-    url: `sounds/xerxes.mp3?${cachebust}`,
-    loop: true,
-  },
+export const SoundInfo: { [soundName: string]: string } = {
+  [GameSounds.MUSIC]: `sounds/xerxes.mp3?${cachebust}`,
   [GameSounds.HISS]: `sounds/sss2.wav?${cachebust}`,
   [GameSounds.BOOM]: `sounds/boom3.wav?${cachebust}`,
   [GameSounds.DENY]: `sounds/cant-move.wav?${cachebust}`,
@@ -25,6 +23,7 @@ export const SoundInfo: { [soundName: string]: any } = {
   [GameSounds.PEG_REMOVE]: `sounds/peg-removed.wav?${cachebust}`,
   [GameSounds.PEG_SELECT]: `sounds/peg-select.wav?${cachebust}`,
   [GameSounds.ROUND_END]: `sounds/round-end-2.wav?${cachebust}`,
+  [GameSounds.CLICK]: `sounds/button-click.wav?${cachebust}`,
 };
 
 export default class AssetManager {

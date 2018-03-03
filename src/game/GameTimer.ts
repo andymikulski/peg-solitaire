@@ -47,7 +47,7 @@ export class GameTimer extends Transform implements Printable {
     toContext.lineWidth = 2;
     toContext.lineCap = 'round';
 
-    toContext.fillStyle = '#333';
+    toContext.fillStyle = '#474647';
     const timeString = this.formatTime(this.elapsed);
     // toContext.fillText(`0:0${this.elapsed}`, this.position[0], this.position[1]);
     toContext.fillText(timeString, this.position[0], this.position[1] - 4);

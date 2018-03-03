@@ -44,8 +44,8 @@ export default class InterstitialScreen extends Emitter implements Printable {
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
 
-    ctx.strokeStyle = '#333';
-    ctx.fillStyle = '#333';
+    ctx.strokeStyle = '#474647';
+    ctx.fillStyle = '#474647';
     ctx.textAlign = 'center';
 
     // Placing text manually!

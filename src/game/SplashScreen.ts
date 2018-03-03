@@ -50,8 +50,8 @@ export default class SplashScreen extends Emitter implements Printable {
     toContext.lineWidth = 2;
     toContext.lineCap = 'round';
 
-    toContext.strokeStyle = '#333';
-    toContext.fillStyle = '#333';
+    toContext.strokeStyle = '#474647';
+    toContext.fillStyle = '#474647';
     toContext.textAlign = 'center';
     toContext.fillText(`Peg Solitaire`, this.width / 2, 100);
     toContext.font = '24px Dimbo';

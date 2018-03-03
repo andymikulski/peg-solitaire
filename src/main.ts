@@ -37,7 +37,7 @@ class PegSolitaire {
   interstitial: InterstitialScreen;
   restartButton: Button;
 
-  currentLevel: number = 1;
+  currentLevel: number = 0;
   levelScore: number = 0;
   totalScore: number = 0;
 
@@ -57,8 +57,8 @@ class PegSolitaire {
     document.body.appendChild(this.pipeline.getCanvas());
 
     this.startBGMusic();
-    // this.gotoSplashScreen();
-    this.startGame();
+    this.gotoSplashScreen();
+    // this.startGame();
   }
 
   registerCommonServices() {
@@ -109,7 +109,7 @@ class PegSolitaire {
 
   startBGMusic() {
     const sound = ServiceProvider.lookup(Service.SOUND);
-    sound.play(GameSounds.MUSIC);
+    sound.play(GameSounds.MUSIC, true);
     sound.setSoundVolume(GameSounds.MUSIC, 0.65);
   }
 
@@ -242,13 +242,12 @@ class PegSolitaire {
   }
 
   async onRoundEnd(gameInfo: IGameInfo) {
-    this.detachRestartButton();
     this.gameBoard.disableAllPegs();
     this.gameTimer.disable();
 
     // Chill for a moment before rolling to the intersertial
     await new Promise(resolve => setTimeout(resolve, 2000));
-
+    // this.detachRestartButton();
     this.gotoInterstitial(gameInfo);
   }
 

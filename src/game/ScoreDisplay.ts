@@ -38,7 +38,7 @@ export default class ScoreDisplay extends Transform implements Printable {
     const labelWidth = toContext.measureText(pointsLabel);
     const offset = labelWidth.width + 25;
 
-    toContext.fillStyle = '#333';
+    toContext.fillStyle = '#474647';
     const timeString = this.formatTime(this.elapsed);
     // toContext.fillText(`0:0${this.elapsed}`, this.position[0], this.position[1]);
     toContext.fillText(pointsLabel, (this.position[0] - offset), this.position[1] - 4);
