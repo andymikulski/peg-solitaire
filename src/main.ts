@@ -87,7 +87,8 @@ class PegSolitaire {
     this.startBGMusic();
 
     // Send the player to the splash screen to start the fun!
-    this.gotoSplashScreen();
+    // this.gotoSplashScreen();
+    this.startGame();
   }
 
   registerCommonServices() {
@@ -211,8 +212,10 @@ class PegSolitaire {
 
   startGame() {
     // Remove the splash
-    this.splash.detach();
-    this.pipeline.removeRenderer(this.splash);
+    if (this.splash) {
+      this.splash.detach();
+      this.pipeline.removeRenderer(this.splash);
+    }
 
     // Reset the session tracking variables
     this.currentLevel = 0;
