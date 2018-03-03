@@ -9,6 +9,7 @@ export class Button extends Transform implements Printable {
   uiLayer: InteractionLayer;
   soundMan: SoundManager;
   paddingFactor: number = 0.3;
+  public isLowProfile: boolean = false;
 
   constructor(public label: string, private onClickHandler: Function) {
     super();
@@ -32,8 +33,14 @@ export class Button extends Transform implements Printable {
 
   print(toContext: CanvasRenderingContext2D) {
     toContext.strokeStyle = 'rgba(71, 70, 71, 0.1)';
-    toContext.strokeRect(this.position[0], this.position[1], this.width, this.height);
-
+    toContext.fillStyle = 'rgba(255, 206, 117, 0.2)';
+    toContext.beginPath();
+    toContext.rect(this.position[0], this.position[1], this.width, this.height);
+    toContext.stroke();
+    if (!this.isLowProfile) {
+      toContext.fill();
+    }
+    toContext.closePath();
     const { paddingFactor } = this;
 
     toContext.font = `${this.height * (1 - paddingFactor)}px Dimbo`;

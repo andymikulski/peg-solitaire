@@ -17,11 +17,19 @@ import { GameClock } from './game/GameClock';
 import { GameTimer } from './game/GameTimer';
 import ScoreDisplay from './game/ScoreDisplay';
 import POINT_VALUES from './game/ScoreManager';
+import GameOverScreen, { GameOverEvents } from './game/GameOverScreen';
 
 
 export interface IRoundInfo {
   numSlots: number;
   numPegsRemaining: number;
+}
+
+export interface ISessionInfo {
+  totalTime: number;
+  totalSlots: number;
+  totalPegsRemaining: number;
+  totalScore: number;
 }
 
 class PegSolitaire {
@@ -30,6 +38,7 @@ class PegSolitaire {
   // Views
   splash: SplashScreen;
   interstitial: InterstitialScreen;
+  gameOverScreen: GameOverScreen;
   // UI Components
   restartButton: Button;
   gameTimer: GameTimer;
@@ -39,9 +48,12 @@ class PegSolitaire {
   gameBoard: GameBoard;
 
   // Session tracking
-  currentLevel: number = 5;
-  levelScore: number = 0;
-  totalScore: number = 0;
+  currentLevel: number;
+  levelScore: number;
+  totalScore: number;
+  totalSlots: number;
+  totalPegsRemaining: number;
+  totalTime: number;
 
   // Tracking if the user is really interested in restarting the current level.
   // #todo the whole restart button should probably be ripped into its own thing
@@ -93,6 +105,12 @@ class PegSolitaire {
     this.pipeline.clear();
     this.pipeline.addRenderer(this.splash, 0);
 
+    if (this.gameOverScreen) {
+      // The splash screen may be accessed from the game over screen.
+      this.pipeline.removeRenderer(this.gameOverScreen);
+      this.gameOverScreen.detach();
+    }
+
     // Ensure the UI is listening to the splash buttons.
     this.splash.attach();
   }
@@ -109,7 +127,12 @@ class PegSolitaire {
       // If the player decides to advance to the next level..
       this.interstitial.on(InterstitialEvents.NEXT_LEVEL, () => {
         this.currentLevel += 1;
+
         this.totalScore += this.levelScore;
+        this.totalPegsRemaining += info.numPegsRemaining;
+        this.totalSlots += info.numSlots;
+        this.totalTime += this.gameTimer.elapsed;
+
         this.loadMap(this.currentLevel);
       });
 
@@ -121,7 +144,7 @@ class PegSolitaire {
 
     // `setRoundInfo` updates the contents of the interstitial dialog.
     // (This includes the % of pegs remaining, % of slots on the field, etc.)
-    this.interstitial.setRoundInfo(info, this.levelScore);
+    this.interstitial.setRoundInfo(info, this.levelScore, this.gameTimer.elapsed);
     // More UI binding.
     this.interstitial.attach();
 
@@ -129,7 +152,33 @@ class PegSolitaire {
     this.pipeline.addRenderer(this.interstitial, 0);
   }
 
-  // gotoGameOverScreen(info: IRoundInfo) { }
+  gotoGameOverScreen() {
+    (<InteractionLayer>ServiceProvider.lookup(Service.UI)).unregisterAll();
+    if (!this.gameOverScreen) {
+      this.gameOverScreen = new GameOverScreen(800, 600);
+      this.gameOverScreen.on(GameOverEvents.GO_HOME, () => {
+        this.gotoSplashScreen();
+      });
+    }
+
+    this.interstitial.detach();
+    this.pipeline.removeRenderer(this.gameBoard);
+    this.gameBoard.cleanupGame();
+    this.pipeline.removeRenderer(this.interstitial);
+    this.pipeline.removeRenderer(this.gameTimer);
+    this.pipeline.removeRenderer(this.scoreDisplay);
+    this.detachRestartButton();
+
+    this.gameOverScreen.updateInfo({
+      totalScore: this.totalScore,
+      totalSlots: this.totalSlots,
+      totalPegsRemaining: this.totalPegsRemaining,
+      totalTime: this.totalTime,
+    });
+
+    this.gameOverScreen.attach();
+    this.pipeline.addRenderer(this.gameOverScreen);
+  }
 
   startBGMusic() {
     const sound = ServiceProvider.lookup(Service.SOUND);
@@ -151,6 +200,7 @@ class PegSolitaire {
     this.pipeline.addRenderer(this.scoreDisplay);
 
     this.restartButton = new Button('RESTART LEVEL', this.onRestartClick.bind(this));
+    this.restartButton.isLowProfile = true;
     this.restartButton.position[0] = 650;
     this.restartButton.position[1] = 25;
     this.restartButton.height = 25;
@@ -165,12 +215,17 @@ class PegSolitaire {
     this.pipeline.removeRenderer(this.splash);
 
     // Reset the session tracking variables
-    this.totalScore = 0;
+    this.currentLevel = 0;
     this.levelScore = 0;
+    this.totalScore = 0;
+    this.totalSlots = 0;
+    this.totalPegsRemaining = 0;
+    this.totalTime = 0;
 
     this.createCommonComponents();
 
     this.loadMap();
+
   }
 
   onRestartClick() {
@@ -242,8 +297,8 @@ class PegSolitaire {
   // Given an index, loads a map configuration from `LevelData`, instantiates it,
   // binds GAME_EVENT hooks, and essentially kicks off gameplay.
   loadMap(index: number = this.currentLevel) {
-    if (index >= LevelData.length) {
-      alert('IT\'S OVER GO HOME');
+    if (index >= 1) { // LevelData.length) {
+      this.gotoGameOverScreen();
       return;
     }
 
@@ -258,7 +313,6 @@ class PegSolitaire {
     }
 
     this.setupSeededRNG(nextLevel.seed);
-
     this.createAndBindBoard(nextLevel);
 
     ServiceProvider.lookup(Service.CLOCK).start();

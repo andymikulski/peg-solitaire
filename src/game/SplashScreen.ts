@@ -46,18 +46,20 @@ export default class SplashScreen extends Emitter implements Printable {
     toContext.lineCap = 'round';
 
     toContext.strokeStyle = '#474647';
-    toContext.fillStyle = 'rgb(4, 150, 255)';
+    toContext.fillStyle = '#97cc04'; // rgb(4, 150, 255)';
     toContext.textAlign = 'center';
     toContext.font = '72px Riffic';
     toContext.fillText(`Peg Solitaire`, this.width / 2, 275);
 
     toContext.globalCompositeOperation = 'multiply';
-    toContext.fillStyle = `rgba(4, 150, 255, 0.05)`;
+    toContext.fillStyle = `rgba(4, 150, 255, 0.0575)`;
     toContext.fillRect(0, 175, 800, 150);
 
     toContext.fillStyle = '#474647';
     toContext.font = '28px Dimbo';
     toContext.textAlign = 'center';
+    // #note math ops which aren't simplified are probably going to be swapped out
+    // with a variable in the future. In this case, the `600` is the canvas height.
     toContext.fillText(`Game by Andy Mikulski`, this.width / 2, 600 - 20);
 
     this.buttons.forEach(button => button.print(toContext));

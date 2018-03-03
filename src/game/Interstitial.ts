@@ -6,6 +6,7 @@ import { Printable } from '../rendering/RenderingPipeline';
 import { Button } from '../common/Button';
 import VCR from '../rendering/VCR';
 import { IRoundInfo } from '../main';
+import { GameTimer } from './GameTimer';
 
 export enum InterstitialEvents {
   NEXT_LEVEL = 'next-level',
@@ -23,9 +24,10 @@ export default class InterstitialScreen extends Emitter implements Printable {
     this.vcr = new VCR(width, height);
   }
 
-  setRoundInfo(info: IRoundInfo, levelScore: number) {
+  setRoundInfo(info: IRoundInfo, levelScore: number, roundTime: number) {
     const { numPegsRemaining, numSlots } = info;
 
+    const formattedTime = GameTimer.formatTime(roundTime);
     const totalPossible = (numSlots + numPegsRemaining - 1);
     const percentCleared = 1 - ((numPegsRemaining - 1) / totalPossible);
     const didUserWin = info.numPegsRemaining === 1 || percentCleared >= 0.75;
@@ -56,7 +58,7 @@ export default class InterstitialScreen extends Emitter implements Printable {
     }
 
     ctx.font = '48px Dimbo';
-    const txtScoreInfo = `${txtPercent}% cleared • ${levelScore} points`;
+    const txtScoreInfo = `${txtPercent}% cleared • ${formattedTime} • ${levelScore} points`;
     ctx.fillText(txtScoreInfo, (this.width / 2) + (didUserWin ? 0 : -5), 325);
 
     ctx.font = '24px Dimbo';
@@ -79,6 +81,7 @@ export default class InterstitialScreen extends Emitter implements Printable {
       height: 48,
     }, {
       condition: true,
+      isLowProfile: didUserWin,
       label: didUserWin ? 'Play Again' : 'Retry',
       callback: () => this.emit(InterstitialEvents.RESTART_CURRENT),
       x: didUserWin ? 125 : 345,
@@ -93,6 +96,7 @@ export default class InterstitialScreen extends Emitter implements Printable {
       let butt = new Button(buttonConfig.label, buttonConfig.callback);
       butt.position[0] = buttonConfig.x;
       butt.position[1] = buttonConfig.y;
+      butt.isLowProfile = buttonConfig.isLowProfile || false;
       butt.width = buttonConfig.width;
       butt.height = buttonConfig.height;
       this.buttons.push(butt);

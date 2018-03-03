@@ -13,7 +13,7 @@ export enum GameSounds {
   CLICK,
 }
 
-const cachebust = Date.now();
+const cachebust = 1;
 export const SoundInfo: { [soundName: string]: string } = {
   [GameSounds.MUSIC]: `sounds/xerxes.mp3?${cachebust}`,
   [GameSounds.HISS]: `sounds/sss2.wav?${cachebust}`,

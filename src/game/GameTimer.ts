@@ -3,11 +3,11 @@ import Transform from '../common/Transform';
 import { ServiceProvider, Service } from '../common/Provider';
 
 export class GameTimer extends Transform implements Printable {
-  elapsed: number = 0;
+  public elapsed: number = 0;
   elapsedStart: number = null;
   isEnabled: boolean = false;
 
-  formatTime(timeInSeconds: number) {
+  static formatTime(timeInSeconds: number) {
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = timeInSeconds % 60;
 
@@ -44,7 +44,7 @@ export class GameTimer extends Transform implements Printable {
     toContext.lineCap = 'round';
 
     toContext.fillStyle = '#474647';
-    const timeString = this.formatTime(this.elapsed);
+    const timeString = GameTimer.formatTime(this.elapsed);
     // toContext.fillText(`0:0${this.elapsed}`, this.position[0], this.position[1]);
     toContext.fillText(timeString, this.position[0], this.position[1] - 4);
     toContext.fillText(timeString, this.position[0], this.position[1] + 4);
