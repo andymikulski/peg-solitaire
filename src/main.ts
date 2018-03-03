@@ -87,8 +87,7 @@ class PegSolitaire {
     this.startBGMusic();
 
     // Send the player to the splash screen to start the fun!
-    // this.gotoSplashScreen();
-    this.startGame();
+    this.gotoSplashScreen();
   }
 
   registerCommonServices() {
