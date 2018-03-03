@@ -6,22 +6,25 @@ import SoundManager from '../sounds/SoundManager';
 import { GameSounds } from '../AssetManager';
 
 export class Button extends Transform implements Printable {
-  private hasMouseDown: boolean = false;
+  uiLayer: InteractionLayer;
+  soundMan: SoundManager;
 
   constructor(public label: string, private onClickHandler: Function) {
     super();
+    this.uiLayer = ServiceProvider.lookup(Service.UI);
+    this.soundMan = ServiceProvider.lookup(Service.SOUND);
   }
 
   enable() {
-    (<InteractionLayer>ServiceProvider.lookup(Service.UI)).register(this);
+    this.uiLayer.register(this);
   }
 
   disable() {
-    (<InteractionLayer>ServiceProvider.lookup(Service.UI)).unregister(this);
+    this.uiLayer.unregister(this);
   }
 
   onClick() {
-    (<SoundManager>ServiceProvider.lookup(Service.SOUND)).play(GameSounds.CLICK);
+    this.soundMan.play(GameSounds.CLICK);
 
     this.onClickHandler();
   }

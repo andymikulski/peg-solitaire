@@ -1,6 +1,6 @@
-import ElementEventHandler, { MOUSE_EVENT, TOUCH_EVENT } from './ElementEventHandler';
+import ElementEventHandler, { MOUSE_EVENT } from './ElementEventHandler';
 import { ServiceProvider, Service } from '../common/Provider';
-import RenderingPipeline, { Printable } from '../rendering/RenderingPipeline';
+import RenderingPipeline from '../rendering/RenderingPipeline';
 import Transform from '../common/Transform';
 
 export interface IInteractable {
@@ -23,8 +23,6 @@ export default class InteractionLayer {
   constructor() {
     this.pipeline = ServiceProvider.lookup(Service.PIPELINE);
 
-    const canvas = this.pipeline.getCanvas();
-
     this.renderingCanvas = this.pipeline.getCanvas();
     this.handler = new ElementEventHandler(this.renderingCanvas);
 
@@ -33,8 +31,6 @@ export default class InteractionLayer {
     this.handler.on(MOUSE_EVENT.CLICK, this.onClick.bind(this));
     this.handler.on(MOUSE_EVENT.R_CLICK, this.onRightClick.bind(this));
     this.handler.on(MOUSE_EVENT.MOVE, this.onMouseMove.bind(this));
-
-    // this.handler.on(TOUCH_EVENT.START, this.onClick.bind(this));
   }
 
   getMouseEventCoords(evt: MouseEvent) {

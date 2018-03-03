@@ -1,10 +1,6 @@
-import { ServiceProvider, Service } from '../common/Provider';
-import { GameClock } from '../game/GameClock';
-import Transform from '../common/Transform';
+import { Button } from '../common/Button';
 import Emitter from '../common/Emitter';
 import { Printable } from '../rendering/RenderingPipeline';
-import InteractionLayer from '../input/InteractionLayer';
-import { Button } from '../common/Button';
 
 export enum SplashScreenEvents {
   START = 'start-game',

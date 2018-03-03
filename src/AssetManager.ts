@@ -35,9 +35,7 @@ export default class AssetManager {
   }
 
   private loadSounds() {
-    for (const name in SoundInfo) {
-      this.soundMan.load(SoundInfo);
-    }
+    this.soundMan.load(SoundInfo);
   }
 
   public loadAssets() {

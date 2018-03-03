@@ -1,5 +1,4 @@
 import VCR from '../rendering/VCR';
-import { ServiceProvider, Service } from '../common/Provider';
 import { Printable } from '../rendering/RenderingPipeline';
 import Transform from '../common/Transform';
 import { IInteractable } from '../input/InteractionLayer';

@@ -1,5 +1,12 @@
-import CanvasRenderer from './CanvasRenderer';
 import Transform from '../common/Transform';
+import VCR from './VCR';
+
+
+export interface IRenderer {
+    getContext(name?: string): CanvasRenderingContext2D;
+    getCanvas(name?: string): HTMLCanvasElement;
+    free(name?: string): void;
+}
 
 export interface Printable {
     print(toContext: CanvasRenderingContext2D, offset?: Transform): void;
@@ -12,7 +19,7 @@ export default class RenderingPipeline {
     private outputCanvas: HTMLCanvasElement;
 
     constructor(width: number, height: number) {
-        const output = new CanvasRenderer(height, width);
+        const output = new VCR(width, height);
 
         this.outputCanvas = output.getCanvas();
         this.outputContext = output.getContext();
@@ -28,7 +35,6 @@ export default class RenderingPipeline {
 
     private renderAll(): void {
         const all: any[] = this.renderers;
-        let renderer: Printable;
 
         this.outputContext.clearRect(0, 0, this.outputContext.canvas.width, this.outputContext.canvas.height);
 

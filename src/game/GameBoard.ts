@@ -1,20 +1,17 @@
-import VCR from '../rendering/VCR';
-import { Printable } from '../rendering/RenderingPipeline';
-import Transform from '../common/Transform';
-import Peg from './Peg';
-import { ServiceProvider, Service } from '../common/Provider';
+import { GameSounds } from '../AssetManager';
+import Emitter from '../common/Emitter';
+import ExplodingPeg from './ExplodingPeg';
 import InteractionLayer from '../input/InteractionLayer';
+import Peg from './Peg';
 import Slot from './Slot';
 import SoundManager from '../sounds/SoundManager';
-import ExplodingPeg from './ExplodingPeg';
-import { GameSounds } from '../AssetManager';
+import { ServiceProvider, Service } from '../common/Provider';
+import { Printable } from '../rendering/RenderingPipeline';
+import Transform from '../common/Transform';
 import QuakeEffect, { QuakeOverTime, QuakeEvents } from '../fx/quake';
-import Emitter from '../common/Emitter';
 import { ILevelOptions } from '../levels';
 import { IGameInfo } from '../main';
 import FloatingText from '../fx/FloatingText';
-
-const fartknocker = 2;
 
 export enum GAME_EVENTS {
   PEG_JUMPED = 'peg-jumped',
@@ -174,7 +171,6 @@ export default abstract class GameBoard extends Emitter implements Printable {
 
   // ---
   onSlotClick(x: number, y: number, slot: Slot) {
-    const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
     const sound: SoundManager = ServiceProvider.lookup(Service.SOUND);
 
     if (this.selectedPeg) {

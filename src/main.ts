@@ -1,23 +1,21 @@
-import RenderingPipeline, { Printable } from './rendering/RenderingPipeline';
-import VCR from './rendering/VCR';
-import GameBoard, { GAME_EVENTS } from './game/GameBoard';
-import SquareGameBoard from './game/SquareBoard';
-import TriangleGameBoard from './game/TriangleBoard';
-import { ServiceProvider, Service } from './common/Provider';
-import InteractionLayer from './input/InteractionLayer';
-import { GameTimer } from './game/GameTimer';
-import SoundManager from './sounds/SoundManager';
-import provideRNG from './common/RNG';
 import AssetManager, { GameSounds } from './AssetManager';
-import SplashScreen, { SplashScreenEvents } from './game/SplashScreen';
-import { GameClock } from './game/GameClock';
+import InteractionLayer from './input/InteractionLayer';
+import { ServiceProvider, Service } from './common/Provider';
+import RenderingPipeline from './rendering/RenderingPipeline';
+import provideRNG from './common/RNG';
+
+import LevelData from './levels';
+import GameBoard, { GAME_EVENTS } from './game/GameBoard';
 import Peg from './game/Peg';
 import Slot from './game/Slot';
 
-import LevelData from './levels';
 import InterstitialScreen, { InterstitialEvents } from './game/Interstitial';
-import ScoreDisplay from './game/ScoreDisplay';
+import SplashScreen, { SplashScreenEvents } from './game/SplashScreen';
+
 import { Button } from './common/Button';
+import { GameClock } from './game/GameClock';
+import { GameTimer } from './game/GameTimer';
+import ScoreDisplay from './game/ScoreDisplay';
 
 
 export interface IGameInfo {
@@ -105,7 +103,7 @@ class PegSolitaire {
     this.pipeline.addRenderer(this.interstitial, 0);
   }
 
-  gotoGameOverScreen(info: IGameInfo) { }
+  // gotoGameOverScreen(info: IGameInfo) { }
 
   startBGMusic() {
     const sound = ServiceProvider.lookup(Service.SOUND);
@@ -222,7 +220,7 @@ class PegSolitaire {
     this.gameBoard.on(GAME_EVENTS.PEG_JUMPED, (consecutiveCount: number) => {
       this.onPlayerScore(1 + consecutiveCount);
     });
-    this.gameBoard.on(GAME_EVENTS.PEG_EXPLODED, (consecutiveCount: number) => {
+    this.gameBoard.on(GAME_EVENTS.PEG_EXPLODED, () => {
       this.onPlayerScore(3);
     });
 

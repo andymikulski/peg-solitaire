@@ -1,9 +1,7 @@
 import { ServiceProvider, Service } from '../common/Provider';
 import { GameClock } from '../game/GameClock';
-import Transform from '../common/Transform';
 import Emitter from '../common/Emitter';
 import { Printable } from '../rendering/RenderingPipeline';
-import InteractionLayer from '../input/InteractionLayer';
 
 import { Button } from '../common/Button';
 import VCR from '../rendering/VCR';

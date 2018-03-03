@@ -1,10 +1,6 @@
-import VCR from '../rendering/VCR';
 import { Printable } from '../rendering/RenderingPipeline';
 import Transform from '../common/Transform';
-import Peg from './Peg';
 import { ServiceProvider, Service } from '../common/Provider';
-import InteractionLayer from '../input/InteractionLayer';
-import Slot from './Slot';
 
 export default class ScoreDisplay extends Transform implements Printable {
   elapsed: number = 0;
@@ -39,8 +35,8 @@ export default class ScoreDisplay extends Transform implements Printable {
     const offset = labelWidth.width + 25;
 
     toContext.fillStyle = '#474647';
-    const timeString = this.formatTime(this.elapsed);
-    // toContext.fillText(`0:0${this.elapsed}`, this.position[0], this.position[1]);
+    // Using a heavy stroke results in sharp artifacts, so just reposition the text
+    // and print it a few times.
     toContext.fillText(pointsLabel, (this.position[0] - offset), this.position[1] - 4);
     toContext.fillText(pointsLabel, (this.position[0] - offset), this.position[1] + 4);
     toContext.fillText(pointsLabel, (this.position[0] - offset) + 1, this.position[1]);

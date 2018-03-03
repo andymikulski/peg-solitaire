@@ -20,8 +20,6 @@ export default class TriangleGameBoard extends GameBoard {
     const { settings } = this;
     const rng = ServiceProvider.lookup(Service.RNG);
     this.map = [];
-    const size = this.size;
-    const middlePoint = Math.round((settings.count * settings.count) / 4);
 
     const slotCoords = settings.slots.map((pt: number[]) => pt.join(','));
 

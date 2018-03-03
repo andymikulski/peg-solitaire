@@ -1,7 +1,6 @@
 import { ServiceProvider, Service } from '../common/Provider';
 import { GameClock } from '../game/GameClock';
 import Transform from '../common/Transform';
-import Emitter from '../common/Emitter';
 import { Printable } from '../rendering/RenderingPipeline';
 
 export default class FloatingText extends Transform implements Printable {
@@ -10,7 +9,7 @@ export default class FloatingText extends Transform implements Printable {
   originalOffset: number[];
   opacity: number = 0;
 
-  constructor(public label: string, private size: number, private origin: number[], private amount: number, private durationMs: number) {
+  constructor(public label: string, private size: number, origin: number[], private amount: number, private durationMs: number) {
     super();
     this.position = [].concat(origin);
     this.originalOffset = [].concat(origin);

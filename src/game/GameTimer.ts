@@ -1,10 +1,6 @@
-import VCR from '../rendering/VCR';
 import { Printable } from '../rendering/RenderingPipeline';
 import Transform from '../common/Transform';
-import Peg from './Peg';
 import { ServiceProvider, Service } from '../common/Provider';
-import InteractionLayer from '../input/InteractionLayer';
-import Slot from './Slot';
 
 export class GameTimer extends Transform implements Printable {
   elapsed: number = 0;

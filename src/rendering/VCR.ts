@@ -1,13 +1,13 @@
-import IRenderer from './IRenderer';
+import { IRenderer } from './RenderingPipeline';
 
 interface VcrContext {
-    id: string;
+    name: string;
     canvas: HTMLCanvasElement;
     context: CanvasRenderingContext2D;
 }
 
 export default class VirtualCanvasRenderer implements IRenderer {
-    instances: any = {};
+    instances: { [instanceName: string]: VcrContext } = {};
 
     constructor(private width: number, private height: number) {
         if (height <= 0 || width <= 0) {

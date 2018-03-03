@@ -22,8 +22,6 @@ export default class SquareGameBoard extends GameBoard {
     const { settings } = this;
     const rng = ServiceProvider.lookup(Service.RNG);
     this.map = [];
-    const size = this.size;
-
     const slots = settings.slots.map((pt: number[]) => pt.join(','));
 
     for (let y = 0; y < settings.count; y += 1) {

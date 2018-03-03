@@ -1,8 +1,7 @@
-import VCR from '../rendering/VCR';
-import { ServiceProvider, Service } from '../common/Provider';
+import { IInteractable } from '../input/InteractionLayer';
 import { Printable } from '../rendering/RenderingPipeline';
 import Transform from '../common/Transform';
-import { IInteractable } from '../input/InteractionLayer';
+import VCR from '../rendering/VCR';
 
 export default class Slot extends Transform implements Printable, IInteractable {
   public x: number;
