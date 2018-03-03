@@ -10,8 +10,9 @@ import { Printable } from '../rendering/RenderingPipeline';
 import Transform from '../common/Transform';
 import QuakeEffect, { QuakeOverTime, QuakeEvents } from '../fx/quake';
 import { ILevelOptions } from '../levels';
-import { IGameInfo } from '../main';
+import { IRoundInfo } from '../main';
 import FloatingText from '../fx/FloatingText';
+import POINT_VALUES from './ScoreManager';
 
 export enum GAME_EVENTS {
   PEG_JUMPED = 'peg-jumped',
@@ -33,14 +34,19 @@ export default abstract class GameBoard extends Emitter implements Printable {
   constructor(protected settings: ILevelOptions) {
     super();
 
+    // This transform's `position` is used solely for the Quake effect.
     this.transform = new Transform();
 
+    // Use board-specific magic numbers to place the board on the screen correctly.
     this.calculateBoardPosition(this.settings.count);
     this.size = this.calculatePegSize(this.settings.count);
 
+    // Generate the Pegs and Slots for the user to interact with.
     this.buildBoard();
   }
 
+  // These functions are to be overwritten by descendent classes in order to
+  // provide different shape boards. See `TriangleGameBoard` vs `SquareGameBoard`
   abstract buildBoard(): void;
   abstract calculateBoardPosition(count: number): void;
   abstract calculatePegSize(count: number): number;
@@ -49,21 +55,6 @@ export default abstract class GameBoard extends Emitter implements Printable {
   abstract getPossibleMoves(peg: Peg): Slot[];
   abstract getNeighboringPegs(peg: Peg): Peg[];
 
-  updateSelectedPeg(newPeg?: Peg) {
-    this.slots.forEach(x => x.isFocused = false);
-
-    if (!newPeg) {
-      this.consecutiveJumps = -1;
-      return;
-    }
-
-    this.selectedPeg = [newPeg, newPeg.x, newPeg.y];
-    newPeg.isSelected = true;
-    const options = this.getPossibleMoves(newPeg);
-    options.forEach((slot: Slot) => {
-      slot.isFocused = true;
-    });
-  }
 
   createSlot(x: number, y: number) {
     const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
@@ -125,6 +116,7 @@ export default abstract class GameBoard extends Emitter implements Printable {
     return slot;
   }
 
+  // Given a slot, creates a new peg in the same position.
   createPegFromSlot(slot: Slot) {
     const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
     const peg = this.createPeg(slot.x, slot.y);
@@ -134,26 +126,24 @@ export default abstract class GameBoard extends Emitter implements Printable {
     return peg;
   }
 
-  update(delta: number, elapsed: number) {
-    this.slots.forEach(slot => {
-      slot.update(delta, elapsed);
-    });
 
-    this.pegs.forEach(peg => {
-      peg.update(delta, elapsed);
-    });
-  }
+  updateSelectedPeg(newPeg?: Peg) {
+    this.clearSelectedPeg();
+    this.slots.forEach(x => x.isFocused = false);
 
+    if (!newPeg) {
+      this.consecutiveJumps = -1;
+      return;
+    }
 
-  print(toContext: CanvasRenderingContext2D) {
-    this.slots.forEach(slot => {
-      slot.print(toContext, this.transform);
-    });
-
-    this.pegs.forEach(peg => {
-      peg.print(toContext, this.transform);
+    this.selectedPeg = [newPeg, newPeg.x, newPeg.y];
+    newPeg.isSelected = true;
+    const options = this.getPossibleMoves(newPeg);
+    options.forEach((slot: Slot) => {
+      slot.isFocused = true;
     });
   }
+
 
   removePeg(peg: Peg) {
     const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
@@ -169,102 +159,108 @@ export default abstract class GameBoard extends Emitter implements Printable {
     ui.unregister(slot);
   }
 
+  explodePeg(peg: Peg) {
+    const sound: SoundManager = ServiceProvider.lookup(Service.SOUND);
+
+    this.createSlotFromPeg(peg);
+    sound.play(GameSounds.HISS);
+    const pegQuake = new QuakeEffect(peg, 5, 200, QuakeOverTime.ASC);
+
+    // Callbacks are still cool, right?
+    pegQuake.on(QuakeEvents.DONE, () => {
+      new QuakeEffect(this.transform, 4, 300);
+      this.removePeg(peg);
+
+      // Get peg neighbors (using board-specific method)
+      const neighbors = this.getNeighboringPegs(peg);
+
+      // remove and/or expldoe them if necessary
+      neighbors.forEach(neigh => {
+        neigh.health -= 1;
+        if (neigh.health <= 0) {
+          this.createSlotFromPeg(neigh);
+          this.removePeg(neigh);
+        }
+      });
+
+      this.selectedPeg[0].health -= 1;
+      if (this.selectedPeg[0].health <= 0) {
+        this.updateSelectedPeg();
+      }
+
+      sound.play(GameSounds.BOOM);
+
+
+      const coords = this.calculatePegPlacement(peg.x, peg.y);
+      new FloatingText(
+        `+${POINT_VALUES.EXPLODING_JUMP}`,
+        // ---
+        24,
+        [
+          coords[0] + this.transform.position[0] + (peg.width / 1.75),
+          coords[1] + this.transform.position[1] + (peg.height / 4),
+        ],
+        25, 1000
+      );
+
+      this.emit(GAME_EVENTS.PEG_EXPLODED, this.consecutiveJumps);
+      // Technically in this version of the game you can't "lose", but it helps keep
+      // the mental model in order.
+      this.checkWinLoseConditions();
+    });
+  }
+
   // ---
   onSlotClick(x: number, y: number, slot: Slot) {
     const sound: SoundManager = ServiceProvider.lookup(Service.SOUND);
 
     if (this.selectedPeg) {
-      const pegX = this.selectedPeg[1];
-      const pegY = this.selectedPeg[2];
-
-      const distX = pegX - x;
-      const distY = pegY - y;
-
       // Kick the distance validation out to subclasses since they each
       // have their own special conditions.
+      const pegX = this.selectedPeg[1];
+      const pegY = this.selectedPeg[2];
+      const distX = pegX - x;
+      const distY = pegY - y;
       if (!this.validateDistance(distX, distY)) {
         sound.play(GameSounds.DENY);
         return;
       }
 
-
-      // -- MIDDLE PEG MUST BE REMOVED --
+      // Grab the peg that was just jumped and is destined for deletion.
       const delX = x + Math.round((pegX - x) / 2);
       const delY = y + Math.round((pegY - y) / 2);
       const delPeg = this.map[delY][delX];
 
+      // No peg found, this isn't a valid move
       if (!delPeg || !(delPeg instanceof Peg)) {
         sound.play(GameSounds.DENY);
         return;
       }
 
-      // ACTIVE PEG MUST BE REMOVED-
+      // The current selected peg needs to be converted a slot and removed.
       this.createSlotFromPeg(this.selectedPeg[0]);
       this.removePeg(this.selectedPeg[0]);
 
-      const isJumpedPegExploding = delPeg instanceof ExplodingPeg;
-
+      // Consecutive jumps are reset when `selectedPeg` changes, so we can
+      // update it blindly here.
       this.consecutiveJumps += 1;
 
+      // Exploding pegs need to be handled slightly differently.
+      const isJumpedPegExploding = delPeg instanceof ExplodingPeg;
       if (isJumpedPegExploding) {
-        this.createSlotFromPeg(delPeg);
-        sound.play(GameSounds.HISS);
-        const pegQuake = new QuakeEffect(delPeg, 5, 200, QuakeOverTime.ASC);
-
-        // Callbacks are still cool, right?
-        pegQuake.on(QuakeEvents.DONE, () => {
-          new QuakeEffect(this.transform, 4, 300);
-          this.removePeg(delPeg);
-
-          // Get delpeg neighbors (using board-specific method)
-          const neighbors = this.getNeighboringPegs(delPeg);
-
-          // remove and/or expldoe them if necessary
-          neighbors.forEach(neigh => {
-            neigh.health -= 1;
-            if (neigh.health <= 0) {
-              this.createSlotFromPeg(neigh);
-              this.removePeg(neigh);
-            }
-          });
-          this.selectedPeg[0].health -= 1;
-
-          sound.play(GameSounds.BOOM);
-
-          const coords = this.calculatePegPlacement(delPeg.x, delPeg.y);
-          new FloatingText(
-            // #todo this shouldn't know what the scoring is worth
-            // (score handling should probably be its own service)
-            `+3`,
-            // ---
-            24,
-            [
-              coords[0] + this.transform.position[0] + (delPeg.width / 1.75),
-              coords[1] + this.transform.position[1] + (delPeg.height / 4),
-            ],
-            25, 1000
-          );
-
-          this.emit(GAME_EVENTS.PEG_EXPLODED, this.consecutiveJumps);
-
-          this.checkGameOver();
-        });
+        this.explodePeg(delPeg);
       } else {
         delPeg.health -= 1;
         this.emit(GAME_EVENTS.PEG_JUMPED, this.consecutiveJumps);
 
-
+        // If the player has jumped more than once using the same selected peg,
+        // they get a bonus, so we need to add a neat little '+2' text effect.
         if (this.consecutiveJumps > 0) {
           const coords = this.calculatePegPlacement(delPeg.x, delPeg.y);
-          new FloatingText(
-            `+${this.consecutiveJumps + 1}`,
-            24,
-            [
-              coords[0] + this.transform.position[0] + (delPeg.width / 1.75),
-              coords[1] + this.transform.position[1] + (delPeg.height / 4),
-            ],
-            25, 1000
-          );
+          new FloatingText(`+${this.consecutiveJumps + 1}`, 24, [
+            coords[0] + this.transform.position[0] + (delPeg.width / 1.75),
+            coords[1] + this.transform.position[1] + (delPeg.height / 4),
+          ], 25, 1000);
         }
 
         if (delPeg.health <= 0) {
@@ -273,23 +269,28 @@ export default abstract class GameBoard extends Emitter implements Printable {
         }
       }
 
+
+      // Examine if the peg we just moved is even still with us
       if (this.selectedPeg[0].health > 0) {
-        // -- NEW PEG IN THIS SLOT --
+        // If so, convert the slot the player just clicked on into the new Peg.
         const newPeg = this.createPegFromSlot(slot);
         newPeg.health = this.selectedPeg[0].health;
         this.removeSlot(slot);
 
+        // Update selection focus.
         this.updateSelectedPeg(newPeg);
 
         if (!isJumpedPegExploding) {
           sound.play(delPeg.health <= 0 ? GameSounds.PEG_REMOVE : GameSounds.PEG_HIT);
         }
       } else {
+        // Dead peg = clear selection.
         this.updateSelectedPeg();
       }
 
-
-      this.checkGameOver();
+      // Technically in this version of the game you can't "lose", but it helps keep
+      // the mental model in order.
+      this.checkWinLoseConditions();
     }
   }
 
@@ -316,70 +317,64 @@ export default abstract class GameBoard extends Emitter implements Printable {
     this.updateSelectedPeg(peg);
   }
 
-  checkGameOver() {
-    let isGameOver = false;
+  // Technically in this version of the game you can't "lose", but it helps keep
+  // the mental model in order.
+  checkWinLoseConditions() {
+    // If there's only one peg, the game is over.
+    let isGameOver = this.pegs.length === 1;
 
-    if (this.pegs.length === 1) {
-      isGameOver = true;
-    } else {
-      const hasMoves = !!this.pegs.find((p: Peg) => { return this.getPossibleMoves(p).length !== 0; });
-
-      if (!hasMoves) {
-        isGameOver = true;
-      }
+    if (!isGameOver) {
+      // If the player does not have moves left to make, the game is over.
+      const playerHasMoves = !!this.pegs.find((p: Peg) => { return this.getPossibleMoves(p).length !== 0; });
+      isGameOver = !playerHasMoves;
     }
 
     if (isGameOver) {
-
-      // If there is more than one peg on the board, the player may not know
-      // that the game is about to end, so shake the pegs a little bit before
-      // ending the round. (If there is one peg left, the user is looking at it,
-      // so there is no need to be like WOAH HEY ROUND IS ENDING)
-
-
-      setTimeout(() => {
-        const sound: SoundManager = ServiceProvider.lookup(Service.SOUND);
-        sound.play(GameSounds.ROUND_END);
-
-        if (this.pegs.length > 1) {
-          this.pegs.forEach((peg: Peg, idx: number) => {
-            new QuakeEffect(peg, 1.5, 300);
-          });
-        }
-      }, 350);
-
-      this.emitGameOverMessage({
+      this.handleGameOver({
         numPegsRemaining: this.getNumPegsRemaining(false),
         numSlots: this.slots.length,
       });
     }
   }
 
+  // Calculates how many pegs are currently on the board. Optionally returns
+  // the total health (2's + 3's).
   getNumPegsRemaining(includingHealth: boolean = false) {
     if (!includingHealth) {
       return this.pegs.length;
     }
-
     return this.pegs.reduce((prev: number, next: Peg) => {
       return prev + next.health;
     }, 0);
   }
 
+  // Remove the highlight on the selected peg.
   clearSelectedPeg() {
+    if (!this.selectedPeg) { return; }
     this.selectedPeg[0].isSelected = false;
     this.selectedPeg = null;
   }
 
-  emitGameOverMessage(info: IGameInfo) {
+
+  handleGameOver(info: IRoundInfo) {
+    // #todo hook into game clock, don't use setTimeout
+    setTimeout(() => {
+      const sound: SoundManager = ServiceProvider.lookup(Service.SOUND);
+      sound.play(GameSounds.ROUND_END);
+
+      this.pegs.forEach((peg: Peg, idx: number) => {
+        new QuakeEffect(peg, 1.5, 300);
+      });
+    }, 350);
+
     this.clearSelectedPeg();
     this.emit(GAME_EVENTS.GAME_OVER, info);
   }
 
+  // Remove bindings, clear pegs, reset tracking vars.
   cleanupGame() {
-    this.disableAllPegs();
     const ui: InteractionLayer = ServiceProvider.lookup(Service.UI);
-
-    // Ideally this would only unregister the pegs/slots on this board..
+    // #todo: Ideally this would only unregister the pegs/slots on this board..
     ui.unregisterAll();
 
     this.consecutiveJumps = -1;
@@ -387,10 +382,29 @@ export default abstract class GameBoard extends Emitter implements Printable {
     this.pegs = [];
   }
 
+  // Triggered externally between rounds.
   disableAllPegs() {
     this.pegs.forEach(x => x.isEnabled = false);
   }
-  enableAllPegs() {
-    this.pegs.forEach(x => x.isEnabled = x instanceof Peg);
+
+  // --
+
+  update(delta: number, elapsed: number) {
+    this.slots.forEach(slot => {
+      slot.update(delta, elapsed);
+    });
+    this.pegs.forEach(peg => {
+      peg.update(delta, elapsed);
+    });
+  }
+
+  print(toContext: CanvasRenderingContext2D) {
+    this.slots.forEach(slot => {
+      slot.print(toContext, this.transform);
+    });
+
+    this.pegs.forEach(peg => {
+      peg.print(toContext, this.transform);
+    });
   }
 }

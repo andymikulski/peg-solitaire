@@ -5,7 +5,7 @@ import { Printable } from '../rendering/RenderingPipeline';
 
 import { Button } from '../common/Button';
 import VCR from '../rendering/VCR';
-import { IGameInfo } from '../main';
+import { IRoundInfo } from '../main';
 
 export enum InterstitialEvents {
   NEXT_LEVEL = 'next-level',
@@ -23,12 +23,12 @@ export default class InterstitialScreen extends Emitter implements Printable {
     this.vcr = new VCR(width, height);
   }
 
-  setRoundInfo(info: IGameInfo, levelScore: number) {
+  setRoundInfo(info: IRoundInfo, levelScore: number) {
     const { numPegsRemaining, numSlots } = info;
 
     const totalPossible = (numSlots + numPegsRemaining - 1);
     const percentCleared = 1 - ((numPegsRemaining - 1) / totalPossible);
-    const didUserWin = info.numPegsRemaining === 1 || percentCleared > 0.75;
+    const didUserWin = info.numPegsRemaining === 1 || percentCleared >= 0.75;
 
     this.buttons = [];
     this.createButtons(didUserWin);

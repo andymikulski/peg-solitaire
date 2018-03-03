@@ -4,7 +4,7 @@ import { ServiceProvider, Service } from './common/Provider';
 import RenderingPipeline from './rendering/RenderingPipeline';
 import provideRNG from './common/RNG';
 
-import LevelData from './levels';
+import LevelData, { ILevelOptions } from './levels';
 import GameBoard, { GAME_EVENTS } from './game/GameBoard';
 import Peg from './game/Peg';
 import Slot from './game/Slot';
@@ -16,9 +16,10 @@ import { Button } from './common/Button';
 import { GameClock } from './game/GameClock';
 import { GameTimer } from './game/GameTimer';
 import ScoreDisplay from './game/ScoreDisplay';
+import POINT_VALUES from './game/ScoreManager';
 
 
-export interface IGameInfo {
+export interface IRoundInfo {
   numSlots: number;
   numPegsRemaining: number;
 }
@@ -26,37 +27,55 @@ export interface IGameInfo {
 class PegSolitaire {
   pipeline: RenderingPipeline;
 
-  unitSize: number;
+  // Views
+  splash: SplashScreen;
+  interstitial: InterstitialScreen;
+  // UI Components
+  restartButton: Button;
   gameTimer: GameTimer;
   scoreDisplay: ScoreDisplay;
 
+  // Game logic controller
   gameBoard: GameBoard;
-  splash: SplashScreen;
-  interstitial: InterstitialScreen;
-  restartButton: Button;
 
+  // Session tracking
   currentLevel: number = 5;
   levelScore: number = 0;
   totalScore: number = 0;
 
+  // Tracking if the user is really interested in restarting the current level.
+  // #todo the whole restart button should probably be ripped into its own thing
   needRestartConfirmation: boolean = false;
 
   constructor() {
+    // Wipe the page.
     document.body.innerHTML = '';
+
+    // Pipeline tracks rendering components and uses requestAnimationFrame to
+    // print to the canvas on the DOM.
     this.pipeline = new RenderingPipeline(800, 600);
     this.pipeline.setBackground('#ececec');
+
+    // ServiceProvider simply allows code in faraway places to easily access
+    // commonly-used global services (such as the AudioManager or the UI manager).
     ServiceProvider.register(Service.PIPELINE, this.pipeline);
 
+    // RNG, UI, Game clock
     this.registerCommonServices();
 
+    // AssetManager only handles audio files (for now), including instantiating
+    // the AudioManager.
     const assetMan = new AssetManager();
     assetMan.loadAssets();
 
+    // Attach an actual <canvas> to the page for the pipeline to render in.
     document.body.appendChild(this.pipeline.getCanvas());
 
+    // Music is the same thing throughout on a loop, so we can just kick it off here.
     this.startBGMusic();
+
+    // Send the player to the splash screen to start the fun!
     this.gotoSplashScreen();
-    // this.startGame();
   }
 
   registerCommonServices() {
@@ -73,53 +92,54 @@ class PegSolitaire {
 
     this.pipeline.clear();
     this.pipeline.addRenderer(this.splash, 0);
-    this.splash.attach();
 
-    if (this.interstitial) {
-      this.interstitial.detach();
-      this.pipeline.removeRenderer(this.interstitial);
-    }
+    // Ensure the UI is listening to the splash buttons.
+    this.splash.attach();
   }
 
-  gotoInterstitial(info: IGameInfo) {
+  gotoInterstitial(info: IRoundInfo) {
+    // Ensure absolutely nothing outside of the interstitial is listening.
+    // #note this is the major problem with my handmade UI management!
     (<InteractionLayer>ServiceProvider.lookup(Service.UI)).unregisterAll();
 
+    // Create the screen if needed.
     if (!this.interstitial) {
       this.interstitial = new InterstitialScreen(800, 600);
+
+      // If the player decides to advance to the next level..
       this.interstitial.on(InterstitialEvents.NEXT_LEVEL, () => {
         this.currentLevel += 1;
         this.totalScore += this.levelScore;
         this.loadMap(this.currentLevel);
       });
 
+      // Restarting is just telling the same map to load again.
       this.interstitial.on(InterstitialEvents.RESTART_CURRENT, () => {
-        this.loadMap(this.currentLevel);
+        this.resetCurrentLevel();
       });
     }
 
+    // `setRoundInfo` updates the contents of the interstitial dialog.
+    // (This includes the % of pegs remaining, % of slots on the field, etc.)
     this.interstitial.setRoundInfo(info, this.levelScore);
+    // More UI binding.
     this.interstitial.attach();
 
+    // Tell the pipeline to render the interstitial above everything else.
     this.pipeline.addRenderer(this.interstitial, 0);
   }
 
-  // gotoGameOverScreen(info: IGameInfo) { }
+  // gotoGameOverScreen(info: IRoundInfo) { }
 
   startBGMusic() {
     const sound = ServiceProvider.lookup(Service.SOUND);
+    // `true` = loop forever
     sound.play(GameSounds.MUSIC, true);
     sound.setSoundVolume(GameSounds.MUSIC, 0.65);
   }
 
-  startGame() {
-    if (this.splash) {
-      this.splash.detach();
-    }
-    this.pipeline.removeRenderer(this.splash);
-
-    this.totalScore = 0;
-    this.levelScore = 0;
-
+  // Creates the gameplay UI elements (clock, score, 'restart' button)
+  createCommonComponents() {
     this.gameTimer = new GameTimer();
     this.gameTimer.position[0] = 25;
     this.gameTimer.position[1] = 600 - 25;
@@ -135,6 +155,19 @@ class PegSolitaire {
     this.restartButton.position[1] = 25;
     this.restartButton.height = 20;
     this.restartButton.width = 105;
+    this.attachRestartButton();
+  }
+
+  startGame() {
+    // Remove the splash
+    this.splash.detach();
+    this.pipeline.removeRenderer(this.splash);
+
+    // Reset the session tracking variables
+    this.totalScore = 0;
+    this.levelScore = 0;
+
+    this.createCommonComponents();
 
     this.loadMap();
   }
@@ -149,7 +182,7 @@ class PegSolitaire {
       setTimeout(() => {
         this.restartButton.label = 'RESTART LEVEL';
         this.needRestartConfirmation = false;
-      }, 10000);
+      }, 5000);
 
     } else {
       this.restartButton.label = 'RESTART LEVEL';
@@ -161,22 +194,18 @@ class PegSolitaire {
     this.loadMap();
   }
 
+  // The Restart button is removed when the interstitial is shown, these helper
+  // functions simply save some lines of code.
   attachRestartButton() {
     this.restartButton.enable();
     this.pipeline.addRenderer(this.restartButton);
   }
-
   detachRestartButton() {
     this.restartButton.disable();
     this.pipeline.removeRenderer(this.restartButton);
   }
 
-  loadMap(index: number = this.currentLevel) {
-    if (index >= LevelData.length) {
-      alert('IT\'S OVER GO HOME');
-      return;
-    }
-
+  prepareForNextLevel() {
     // If a game board already exists, we basically need to prep it for GC.
     if (this.gameBoard) {
       this.gameBoard.cleanupGame();
@@ -190,38 +219,62 @@ class PegSolitaire {
       this.interstitial.detach();
     }
 
-    if (this.gameTimer) {
-      this.gameTimer.resetTime();
-      this.gameTimer.disable();
-    }
+    // Game timer is the current level's time. It's disable duntil the user moves
+    // their first peg.
+    this.gameTimer.resetTime();
+    this.gameTimer.disable();
 
+    //
     this.needRestartConfirmation = false;
     this.attachRestartButton();
 
-    // Need to clear the cache so pegs can redraw at the proper size
+    // Need to clear the cache so pegs can redraw at the proper size.
     Peg.clearRenderCache();
     Slot.clearRenderCache();
 
+    // Current level score
+    this.levelScore = 0;
+    this.updateScoreDisplay(this.levelScore);
+  }
+
+
+  // Given an index, loads a map configuration from `LevelData`, instantiates it,
+  // binds GAME_EVENT hooks, and essentially kicks off gameplay.
+  loadMap(index: number = this.currentLevel) {
+    if (index >= LevelData.length) {
+      alert('IT\'S OVER GO HOME');
+      return;
+    }
+
+    // Remove interstitial, add the UI components, etc. Basically prep for
+    //  the game to roll once we create the game board.
+    this.prepareForNextLevel();
+
+    // Figure out if we actually have level data.
     const nextLevel = LevelData[index];
     if (!nextLevel) {
       throw new Error(`No map found for level "${index}"`);
     }
 
-    this.levelScore = 0;
-    this.updateScoreDisplay(this.levelScore);
-
     this.setupSeededRNG(nextLevel.seed);
 
-    const { board } = nextLevel;
-    this.gameBoard = new board(nextLevel);
+    this.createAndBindBoard(nextLevel);
+
+    ServiceProvider.lookup(Service.CLOCK).start();
+  }
+
+  createAndBindBoard(options: ILevelOptions) {
+    const LevelBoard = options.board;
+    this.gameBoard = new LevelBoard(options);
     this.pipeline.addRenderer(this.gameBoard);
 
     this.gameBoard.on(GAME_EVENTS.GAME_OVER, this.onRoundEnd.bind(this));
     this.gameBoard.on(GAME_EVENTS.PEG_JUMPED, (consecutiveCount: number) => {
-      this.onPlayerScore(1 + consecutiveCount);
+      const points = POINT_VALUES.DEFAULT_JUMP + (consecutiveCount * POINT_VALUES.CHECKERS_BONUS);
+      this.onPlayerScore(points);
     });
     this.gameBoard.on(GAME_EVENTS.PEG_EXPLODED, () => {
-      this.onPlayerScore(3);
+      this.onPlayerScore(POINT_VALUES.EXPLODING_JUMP);
     });
 
     // Begin the timer after the first peg has moved
@@ -229,27 +282,24 @@ class PegSolitaire {
       this.gameTimer.enable();
     });
 
-    ServiceProvider.lookup(Service.CLOCK).start();
   }
 
   onPlayerScore(amount: number) {
-    // return () => {
     this.levelScore += amount;
     this.updateScoreDisplay(this.levelScore);
-    // };
   }
 
   updateScoreDisplay(score: number) {
     this.scoreDisplay.points = score;
   }
 
-  async onRoundEnd(gameInfo: IGameInfo) {
+  async onRoundEnd(gameInfo: IRoundInfo) {
     this.gameBoard.disableAllPegs();
     this.gameTimer.disable();
 
     // Chill for a moment before rolling to the intersertial
     await new Promise(resolve => setTimeout(resolve, 2000));
-    // this.detachRestartButton();
+
     this.gotoInterstitial(gameInfo);
   }
 
@@ -257,8 +307,7 @@ class PegSolitaire {
     ServiceProvider.unregister(Service.RNG);
     ServiceProvider.register(Service.RNG, provideRNG(seed));
   }
-
 }
 
-
+// Run the game as soon as the page loads!
 new PegSolitaire();

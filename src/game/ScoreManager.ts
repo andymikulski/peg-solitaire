@@ -1,0 +1,7 @@
+const POINT_VALUES = {
+  DEFAULT_JUMP: 1,
+  CHECKERS_BONUS: 1,
+  EXPLODING_JUMP: 3,
+};
+
+export default POINT_VALUES;

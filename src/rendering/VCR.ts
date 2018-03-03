@@ -52,20 +52,11 @@ export default class VirtualCanvasRenderer implements IRenderer {
         }
     }
 
-    private createNew() {
+    private init(name: string) {
         const canvas = document.createElement('canvas');
         canvas.setAttribute('height', `${this.height}px`);
         canvas.setAttribute('width', `${this.width}px`);
         const context = canvas.getContext('2d');
-
-        return {
-            canvas,
-            context,
-        };
-    }
-
-    private init(name: string) {
-        const { canvas, context } = this.createNew();
 
         this.instances[name] = {
             name,
