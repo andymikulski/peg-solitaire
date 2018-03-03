@@ -144,7 +144,7 @@ class PegSolitaire {
 
     // `setRoundInfo` updates the contents of the interstitial dialog.
     // (This includes the % of pegs remaining, % of slots on the field, etc.)
-    this.interstitial.setRoundInfo(info, this.levelScore, this.gameTimer.elapsed);
+    this.interstitial.setRoundInfo(info, this.currentLevel + 1, this.levelScore, this.gameTimer.elapsed);
     // More UI binding.
     this.interstitial.attach();
 
@@ -297,7 +297,7 @@ class PegSolitaire {
   // Given an index, loads a map configuration from `LevelData`, instantiates it,
   // binds GAME_EVENT hooks, and essentially kicks off gameplay.
   loadMap(index: number = this.currentLevel) {
-    if (index >= 1) { // LevelData.length) {
+    if (index >= LevelData.length) {
       this.gotoGameOverScreen();
       return;
     }

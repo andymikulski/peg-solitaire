@@ -24,7 +24,7 @@ export default class InterstitialScreen extends Emitter implements Printable {
     this.vcr = new VCR(width, height);
   }
 
-  setRoundInfo(info: IRoundInfo, levelScore: number, roundTime: number) {
+  setRoundInfo(info: IRoundInfo, levelNumber: number, levelScore: number, roundTime: number, ) {
     const { numPegsRemaining, numSlots } = info;
 
     const formattedTime = GameTimer.formatTime(roundTime);
@@ -49,7 +49,7 @@ export default class InterstitialScreen extends Emitter implements Printable {
     ctx.textAlign = 'center';
 
     // Placing text manually!
-    const txtHeader = didUserWin ? 'Level Passed' : 'Level Failed';
+    const txtHeader = didUserWin ? `Level ${levelNumber} Passed` : `Level ${levelNumber} Failed`;
     ctx.fillText(txtHeader, (this.width / 2) + (didUserWin ? 0 : -5), 200);
 
     let txtPercent = (percentCleared * 100).toFixed(2);
