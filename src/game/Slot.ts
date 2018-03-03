@@ -75,8 +75,6 @@ export default class Slot extends Transform implements Printable, IInteractable 
       this.width,
       this.height,
     );
-
-
   }
 
   onClick() { }

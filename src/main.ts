@@ -16,18 +16,28 @@ import Slot from './game/Slot';
 
 import LevelData from './levels';
 import InterstitialScreen, { InterstitialEvents } from './game/Interstitial';
+import ScoreDisplay from './game/ScoreDisplay';
+
+
+export interface IGameInfo {
+  numSlots: number;
+  numPegsRemaining: number;
+}
 
 class PegSolitaire {
   pipeline: RenderingPipeline;
 
   unitSize: number;
   gameTimer: GameTimer;
+  scoreDisplay: ScoreDisplay;
 
   gameBoard: GameBoard;
   splash: SplashScreen;
   interstitial: InterstitialScreen;
 
-  currentLevel: number = 0;
+  currentLevel: number = 1;
+  levelScore: number = 0;
+  totalScore: number = 0;
 
   constructor() {
     document.body.innerHTML = '';
@@ -35,7 +45,7 @@ class PegSolitaire {
     this.pipeline.setBackground('#ececec');
     ServiceProvider.register(Service.PIPELINE, this.pipeline);
 
-    this.registerServices();
+    this.registerCommonServices();
 
     const assetMan = new AssetManager();
     assetMan.loadAssets();
@@ -43,10 +53,11 @@ class PegSolitaire {
     document.body.appendChild(this.pipeline.getCanvas());
 
     this.startBGMusic();
-    this.gotoSplashScreen();
+    // this.gotoSplashScreen();
+    this.startGame();
   }
 
-  registerServices() {
+  registerCommonServices() {
     ServiceProvider.register(Service.RNG, provideRNG('silly string'));
     ServiceProvider.register(Service.UI, new InteractionLayer());
     ServiceProvider.register(Service.CLOCK, new GameClock());
@@ -68,13 +79,14 @@ class PegSolitaire {
     }
   }
 
-  gotoInstertial(userWon: boolean) {
+  gotoInterstitial(info: IGameInfo) {
     (<InteractionLayer>ServiceProvider.lookup(Service.UI)).unregisterAll();
 
     if (!this.interstitial) {
       this.interstitial = new InterstitialScreen(800, 600);
       this.interstitial.on(InterstitialEvents.NEXT_LEVEL, () => {
         this.currentLevel += 1;
+        this.totalScore += this.levelScore;
         this.loadMap(this.currentLevel);
       });
 
@@ -83,7 +95,7 @@ class PegSolitaire {
       });
     }
 
-    this.interstitial.setRoundInfo(userWon);
+    this.interstitial.setRoundInfo(info, this.levelScore);
     this.interstitial.attach();
 
     // this.pipeline.clear();
@@ -97,19 +109,28 @@ class PegSolitaire {
   }
 
   startGame() {
-    this.splash.detach();
+    if (this.splash) {
+      this.splash.detach();
+    }
     this.pipeline.removeRenderer(this.splash);
+
+    this.totalScore = 0;
+    this.levelScore = 0;
 
     this.gameTimer = new GameTimer();
     this.gameTimer.position[0] = 25;
     this.gameTimer.position[1] = 600 - 25;
     this.pipeline.addRenderer(this.gameTimer);
 
+    this.scoreDisplay = new ScoreDisplay();
+    this.scoreDisplay.position[0] = 800;
+    this.scoreDisplay.position[1] = 600 - 25;
+    this.pipeline.addRenderer(this.scoreDisplay);
+
     this.loadMap();
   }
 
   loadMap(index: number = this.currentLevel) {
-
     if (this.gameBoard) {
       this.gameBoard.cleanupGame();
       this.pipeline.removeRenderer(this.gameBoard);
@@ -128,24 +149,42 @@ class PegSolitaire {
       throw new Error(`No map found for level "${index}"`);
     }
 
+    this.levelScore = 0;
+    this.updateScoreDisplay(this.levelScore);
+
     this.setupSeededRNG(nextLevel.seed);
 
     const { board } = nextLevel;
     this.gameBoard = new board(nextLevel);
     this.pipeline.addRenderer(this.gameBoard);
 
-    this.gameBoard.on(GAME_EVENTS.LOSE, () => this.onRoundEnd(false));
-    this.gameBoard.on(GAME_EVENTS.WIN, () => this.onRoundEnd(true));
+    this.gameBoard.on(GAME_EVENTS.GAME_OVER, this.onRoundEnd.bind(this));
+    this.gameBoard.on(GAME_EVENTS.PEG_REMOVED, this.onPlayerScore(1));
+    this.gameBoard.on(GAME_EVENTS.PEG_EXPLODED, this.onPlayerScore(3));
 
     ServiceProvider.lookup(Service.CLOCK).start();
     this.gameTimer.enable();
   }
 
-  onRoundEnd(result: boolean) {
+  onPlayerScore(amount: number) {
+    return () => {
+      this.levelScore += amount;
+      this.updateScoreDisplay(this.levelScore);
+    };
+  }
+
+  updateScoreDisplay(score: number) {
+    this.scoreDisplay.points = score;
+  }
+
+  async onRoundEnd(gameInfo: IGameInfo) {
     this.gameBoard.disableAllPegs();
     this.gameTimer.disable();
 
-    this.gotoInstertial(result);
+    // Chill for a moment before rolling to the intersertial
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    this.gotoInterstitial(gameInfo);
   }
 
   setupSeededRNG(seed: string) {

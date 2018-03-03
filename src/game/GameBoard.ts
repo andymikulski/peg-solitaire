@@ -11,11 +11,14 @@ import { GameSounds } from '../AssetManager';
 import QuakeFX, { QuakeOverTime, QuakeEvents } from '../fx/quake';
 import Emitter from '../common/Emitter';
 import { ILevelOptions } from '../levels';
+import { IGameInfo } from '../main';
 
 export enum GAME_EVENTS {
-  WIN = 'win',
-  LOSE = 'lose',
-}
+  PEG_REMOVED = 'peg-removed',
+  PEG_EXPLODED = 'peg-exploded',
+  GAME_OVER = 'game-over',
+};
+
 
 export default abstract class GameBoard extends Emitter implements Printable {
   map: any;
@@ -226,6 +229,8 @@ export default abstract class GameBoard extends Emitter implements Printable {
 
           sound.play(GameSounds.BOOM);
 
+          this.emit(GAME_EVENTS.PEG_EXPLODED);
+
           this.checkGameOver();
         });
       } else {
@@ -234,6 +239,7 @@ export default abstract class GameBoard extends Emitter implements Printable {
         if (delPeg.health <= 0) {
           this.createSlotFromPeg(delPeg);
           this.removePeg(delPeg);
+          this.emit(GAME_EVENTS.PEG_REMOVED);
         }
       }
 
@@ -280,19 +286,44 @@ export default abstract class GameBoard extends Emitter implements Printable {
   }
 
   checkGameOver() {
+    let isGameOver = false;
+
     if (this.pegs.length === 1) {
-      this.selectedPeg[0].isSelected = false;
-      this.emit(GAME_EVENTS.WIN);
-      return;
+      isGameOver = true;
+    } else {
+      const hasMoves = !!this.pegs.find((p: Peg) => { return this.getPossibleMoves(p).length !== 0; });
+
+      if (!hasMoves) {
+        isGameOver = true;
+      }
     }
 
-    const hasMoves = !!this.pegs.find((p: Peg) => { return this.getPossibleMoves(p).length !== 0; });
-
-    if (!hasMoves) {
-      this.selectedPeg[0].isSelected = false;
-      this.selectedPeg = null;
-      this.emit(GAME_EVENTS.LOSE);
+    if (isGameOver) {
+      this.emitGameOverMessage({
+        numPegsRemaining: this.getNumPegsRemaining(false),
+        numSlots: this.slots.length,
+      });
     }
+  }
+
+  getNumPegsRemaining(includingHealth: boolean = false) {
+    if (!includingHealth) {
+      return this.pegs.length;
+    }
+
+    return this.pegs.reduce((prev: number, next: Peg) => {
+      return prev + next.health;
+    }, 0);
+  }
+
+  clearSelectedPeg() {
+    this.selectedPeg[0].isSelected = false;
+    this.selectedPeg = null;
+  }
+
+  emitGameOverMessage(info: IGameInfo) {
+    this.clearSelectedPeg();
+    this.emit(GAME_EVENTS.GAME_OVER, info);
   }
 
   cleanupGame() {

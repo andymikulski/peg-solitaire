@@ -6,6 +6,8 @@ import { Printable } from '../rendering/RenderingPipeline';
 import InteractionLayer from '../input/InteractionLayer';
 
 import { Button } from '../common/Button';
+import VCR from '../rendering/VCR';
+import { IGameInfo } from '../main';
 
 export enum InterstitialEvents {
   NEXT_LEVEL = 'next-level',
@@ -14,38 +16,77 @@ export enum InterstitialEvents {
 
 export default class InterstitialScreen extends Emitter implements Printable {
   buttons: Button[] = [];
-  userHasWon: boolean = false;
+
+  opacity: number = 0;
+  vcr: VCR;
 
   constructor(private width: number, private height: number) {
     super();
+    this.vcr = new VCR(width, height);
   }
 
-  setRoundInfo(didUserWin: boolean) {
+  setRoundInfo(info: IGameInfo, levelScore: number) {
+    const { numPegsRemaining, numSlots } = info;
+
+    const totalPossible = (numSlots + numPegsRemaining - 1);
+    const percentCleared = 1 - ((numPegsRemaining - 1) / totalPossible);
+    const didUserWin = info.numPegsRemaining === 1 || percentCleared > 0.75;
+
     this.buttons = [];
-    this.userHasWon = didUserWin;
     this.createButtons(didUserWin);
-  }
 
+    const ctx = this.vcr.getContext();
+    ctx.fillStyle = 'rgba(236, 236, 236, 0.95)'; //rgba(255,255,255,0.3)';
+    ctx.fillRect(0, 0, this.width, this.height);
+
+
+    ctx.font = '92px Dimbo';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+
+    ctx.strokeStyle = '#333';
+    ctx.fillStyle = '#333';
+    ctx.textAlign = 'center';
+
+    // Placing text manually!
+    const txtHeader = didUserWin ? 'Level Passed' : 'Level Failed';
+    ctx.fillText(txtHeader, (this.width / 2) + (didUserWin ? 0 : -5), 200);
+
+    let txtPercent = (percentCleared * 100).toFixed(2);
+    if (txtPercent.endsWith('.00')) {
+      txtPercent = txtPercent.slice(0, -2);
+    }
+
+    ctx.font = '48px Dimbo';
+    const txtScoreInfo = `${txtPercent}% cleared • ${levelScore} points`;
+    ctx.fillText(txtScoreInfo, (this.width / 2) + (didUserWin ? 0 : -5), 325);
+
+    ctx.font = '24px Dimbo';
+    if (!didUserWin) {
+      ctx.fillText(`(You need 75% to advance to the next level)`, (this.width / 2) + (didUserWin ? 0 : -5), 375);
+    }
+
+
+    this.buttons.forEach(button => button.print(ctx));
+  }
 
   createButtons(didUserWin: boolean) {
-
     [{
-      condition: true,
+      condition: didUserWin,
       label: 'Next Level',
       callback: () => this.emit(InterstitialEvents.NEXT_LEVEL),
-      x: this.width - (165 + 100), // (this.width / 2) - (90 / 2),
-      y: this.height * 0.6,
-      // y: this.height * 0.725,
+      x: this.width - (165 + 100),
+      y: this.height * 0.75,
       width: 165,
       height: 48,
     }, {
       condition: true,
-      label: 'Retry',
+      label: didUserWin ? 'Play Again' : 'Retry',
       callback: () => this.emit(InterstitialEvents.RESTART_CURRENT),
-      x: 125, // this.width * 0.2, // (this.width / 2) - (165 / 2),
-      y: this.height * 0.6,
-      width: 90,
-      height: 48,
+      x: didUserWin ? 125 : 345,
+      y: this.height * 0.75,
+      width: didUserWin ? 50 : 90,
+      height: didUserWin ? 32 : 48,
     }].forEach(buttonConfig => {
       if (!buttonConfig.condition) {
         return;
@@ -61,29 +102,38 @@ export default class InterstitialScreen extends Emitter implements Printable {
   }
 
   attach() {
+    this.opacity = 0;
+    (<GameClock>ServiceProvider.lookup(Service.CLOCK)).addBinding(this);
+
     this.buttons.forEach(x => x.enable());
   }
 
   detach() {
+    this.vcr.clear();
+    this.opacity = 0;
+    (<GameClock>ServiceProvider.lookup(Service.CLOCK)).removeBinding(this);
+
     this.buttons.forEach(x => x.disable());
   }
 
+  update(delta: number, elapsed: number) {
+    this.opacity += (delta / 1000) * 2;
+    this.opacity = Math.min(this.opacity, 1);
+  }
+
   print(toContext: CanvasRenderingContext2D) {
-    toContext.fillStyle = 'rgba(255,255,255,0.3)';
-    toContext.fillRect(0, 0, this.width, this.height);
-
-
-    toContext.font = '48px Riffic';
-    toContext.lineWidth = 2;
-    toContext.lineCap = 'round';
-
-    toContext.strokeStyle = '#333';
-    toContext.fillStyle = '#333';
-    toContext.textAlign = 'center';
-
-    const txt = this.userHasWon ? 'Level Clear!' : 'Try Again!';
-    toContext.fillText(txt, (this.width / 2) + (this.userHasWon ? 0 : -5), (this.height * 0.1) + (this.userHasWon ? 100 : 25));
-
-    this.buttons.forEach(button => button.print(toContext));
+    toContext.globalAlpha = this.opacity;
+    toContext.drawImage(
+      this.vcr.getCanvas(),
+      0,
+      0,
+      this.width,
+      this.height,
+      0,
+      0,
+      this.width,
+      this.height,
+    );
+    toContext.globalAlpha = 1;
   }
 }
