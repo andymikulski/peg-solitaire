@@ -14,7 +14,7 @@ import { ILevelOptions } from '../levels';
 import { IGameInfo } from '../main';
 
 export enum GAME_EVENTS {
-  PEG_REMOVED = 'peg-removed',
+  PEG_JUMPED = 'peg-jumped',
   PEG_EXPLODED = 'peg-exploded',
   GAME_OVER = 'game-over',
 };
@@ -220,6 +220,7 @@ export default abstract class GameBoard extends Emitter implements Printable {
           // remove and/or expldoe them if necessary
           neighbors.forEach(neigh => {
             neigh.health -= 1;
+
             if (neigh.health <= 0) {
               this.createSlotFromPeg(neigh);
               this.removePeg(neigh);
@@ -235,11 +236,11 @@ export default abstract class GameBoard extends Emitter implements Printable {
         });
       } else {
         delPeg.health -= 1;
+        this.emit(GAME_EVENTS.PEG_JUMPED);
 
         if (delPeg.health <= 0) {
           this.createSlotFromPeg(delPeg);
           this.removePeg(delPeg);
-          this.emit(GAME_EVENTS.PEG_REMOVED);
         }
       }
 
@@ -299,6 +300,26 @@ export default abstract class GameBoard extends Emitter implements Printable {
     }
 
     if (isGameOver) {
+
+      // If there is more than one peg on the board, the player may not know
+      // that the game is about to end, so shake the pegs a little bit before
+      // ending the round. (If there is one peg left, the user is looking at it,
+      // so there is no need to be like WOAH HEY ROUND IS ENDING)
+
+
+      setTimeout(() => {
+        const sound: SoundManager = ServiceProvider.lookup(Service.SOUND);
+        sound.play(GameSounds.ROUND_END);
+
+        if (this.pegs.length > 1) {
+          this.pegs.forEach((peg: Peg, idx: number) => {
+            // setTimeout(() => {
+            new QuakeFX(peg, 2, 300);
+            // }, idx * (20 / this.pegs.length));
+          })
+        }
+      }, 350);
+
       this.emitGameOverMessage({
         numPegsRemaining: this.getNumPegsRemaining(false),
         numSlots: this.slots.length,

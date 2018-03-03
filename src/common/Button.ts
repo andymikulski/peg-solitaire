@@ -1,10 +1,12 @@
-import Transform from "./Transform";
+import Transform from './Transform';
 import { Printable } from '../rendering/RenderingPipeline';
-import { ServiceProvider, Service } from "./Provider";
-import InteractionLayer from "../input/InteractionLayer";
+import { ServiceProvider, Service } from './Provider';
+import InteractionLayer from '../input/InteractionLayer';
 
 export class Button extends Transform implements Printable {
-  constructor(private label: string, private onClickHandler: Function) {
+  private hasMouseDown: boolean = false;
+
+  constructor(public label: string, private onClickHandler: Function) {
     super();
   }
 
@@ -29,6 +31,6 @@ export class Button extends Transform implements Printable {
     toContext.lineCap = 'round';
     toContext.textAlign = 'left';
     toContext.fillStyle = '#333';
-    toContext.fillText(this.label, this.position[0], this.position[1] + this.height); // - (this.width / 2), this.position[1] + 48);
+    toContext.fillText(this.label, this.position[0], this.position[1] + this.height);
   }
 }

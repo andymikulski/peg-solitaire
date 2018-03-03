@@ -89,7 +89,7 @@ const LevelData: ILevelOptions[] = [
   },
 
   {
-    seed: 'yiha!',
+    seed: 'yiha!!!',
     board: SquareGameBoard,
     slots: [[0, 0]],
     count: 6,

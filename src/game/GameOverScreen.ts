@@ -9,12 +9,11 @@ import { Button } from '../common/Button';
 import VCR from '../rendering/VCR';
 import { IGameInfo } from '../main';
 
-export enum InterstitialEvents {
-  NEXT_LEVEL = 'next-level',
-  RESTART_CURRENT = 'restart-current',
+export enum GameOverEvents {
+  GO_HOME = 'go-home',
 };
 
-export default class InterstitialScreen extends Emitter implements Printable {
+export default class GameOverScreen extends Emitter implements Printable {
   buttons: Button[] = [];
 
   opacity: number = 0;
@@ -36,7 +35,7 @@ export default class InterstitialScreen extends Emitter implements Printable {
     this.createButtons(didUserWin);
 
     const ctx = this.vcr.getContext();
-    ctx.fillStyle = 'rgba(236, 236, 236, 0.95)';
+    ctx.fillStyle = 'rgba(236, 236, 236, 1)';
     ctx.fillRect(0, 0, this.width, this.height);
 
 

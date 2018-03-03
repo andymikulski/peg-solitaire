@@ -17,6 +17,7 @@ import Slot from './game/Slot';
 import LevelData from './levels';
 import InterstitialScreen, { InterstitialEvents } from './game/Interstitial';
 import ScoreDisplay from './game/ScoreDisplay';
+import { Button } from './common/Button';
 
 
 export interface IGameInfo {
@@ -34,10 +35,13 @@ class PegSolitaire {
   gameBoard: GameBoard;
   splash: SplashScreen;
   interstitial: InterstitialScreen;
+  restartButton: Button;
 
   currentLevel: number = 1;
   levelScore: number = 0;
   totalScore: number = 0;
+
+  needRestartConfirmation: boolean = false;
 
   constructor() {
     document.body.innerHTML = '';
@@ -98,9 +102,10 @@ class PegSolitaire {
     this.interstitial.setRoundInfo(info, this.levelScore);
     this.interstitial.attach();
 
-    // this.pipeline.clear();
     this.pipeline.addRenderer(this.interstitial, 0);
   }
+
+  gotoGameOverScreen(info: IGameInfo) { }
 
   startBGMusic() {
     const sound = ServiceProvider.lookup(Service.SOUND);
@@ -127,18 +132,73 @@ class PegSolitaire {
     this.scoreDisplay.position[1] = 600 - 25;
     this.pipeline.addRenderer(this.scoreDisplay);
 
+    this.restartButton = new Button('RESTART LEVEL', this.onRestartClick.bind(this));
+    this.restartButton.position[0] = 670;
+    this.restartButton.position[1] = 25;
+    this.restartButton.height = 20;
+    this.restartButton.width = 105;
+
     this.loadMap();
   }
 
+  onRestartClick() {
+    // #todo dont hardcode these labels
+    if (!this.needRestartConfirmation) {
+      this.restartButton.label = 'ARE YOU SURE?';
+      this.needRestartConfirmation = true;
+
+      // Wait ten seconds to revert back to default state
+      setTimeout(() => {
+        this.restartButton.label = 'RESTART LEVEL';
+        this.needRestartConfirmation = false;
+      }, 10000);
+
+    } else {
+      this.restartButton.label = 'RESTART LEVEL';
+      this.resetCurrentLevel();
+    }
+  }
+
+  resetCurrentLevel() {
+    this.loadMap();
+  }
+
+  attachRestartButton() {
+    this.restartButton.enable();
+    this.pipeline.addRenderer(this.restartButton);
+  }
+
+  detachRestartButton() {
+    this.restartButton.disable();
+    this.pipeline.removeRenderer(this.restartButton);
+  }
+
   loadMap(index: number = this.currentLevel) {
+    if (index >= LevelData.length) {
+      alert('IT\'S OVER GO HOME');
+      return;
+    }
+
+    // If a game board already exists, we basically need to prep it for GC.
     if (this.gameBoard) {
       this.gameBoard.cleanupGame();
       this.pipeline.removeRenderer(this.gameBoard);
+      this.detachRestartButton();
     }
+
+    // If we're coming from an interstitial we also need to remove that, too.
     if (this.interstitial) {
       this.pipeline.removeRenderer(this.interstitial);
       this.interstitial.detach();
     }
+
+    if (this.gameTimer) {
+      this.gameTimer.resetTime();
+      this.gameTimer.disable();
+    }
+
+    this.needRestartConfirmation = false;
+    this.attachRestartButton();
 
     // Need to clear the cache so pegs can redraw at the proper size
     Peg.clearRenderCache();
@@ -159,11 +219,15 @@ class PegSolitaire {
     this.pipeline.addRenderer(this.gameBoard);
 
     this.gameBoard.on(GAME_EVENTS.GAME_OVER, this.onRoundEnd.bind(this));
-    this.gameBoard.on(GAME_EVENTS.PEG_REMOVED, this.onPlayerScore(1));
+    this.gameBoard.on(GAME_EVENTS.PEG_JUMPED, this.onPlayerScore(1));
     this.gameBoard.on(GAME_EVENTS.PEG_EXPLODED, this.onPlayerScore(3));
 
+    // Begin the timer after the first peg has moved
+    this.gameBoard.once(GAME_EVENTS.PEG_JUMPED, () => {
+      this.gameTimer.enable();
+    });
+
     ServiceProvider.lookup(Service.CLOCK).start();
-    this.gameTimer.enable();
   }
 
   onPlayerScore(amount: number) {
@@ -178,11 +242,12 @@ class PegSolitaire {
   }
 
   async onRoundEnd(gameInfo: IGameInfo) {
+    this.detachRestartButton();
     this.gameBoard.disableAllPegs();
     this.gameTimer.disable();
 
     // Chill for a moment before rolling to the intersertial
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     this.gotoInterstitial(gameInfo);
   }

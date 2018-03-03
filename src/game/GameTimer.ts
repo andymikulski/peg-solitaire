@@ -8,6 +8,8 @@ import Slot from './Slot';
 
 export class GameTimer extends Transform implements Printable {
   elapsed: number = 0;
+  elapsedStart: number = null;
+  isEnabled: boolean = false;
 
   formatTime(timeInSeconds: number) {
     const minutes = Math.floor(timeInSeconds / 60);
@@ -19,13 +21,25 @@ export class GameTimer extends Transform implements Printable {
 
   enable() {
     ServiceProvider.lookup(Service.CLOCK).addBinding(this);
+    this.isEnabled = true;
+    this.resetTime();
   }
   disable() {
     ServiceProvider.lookup(Service.CLOCK).removeBinding(this);
+    this.isEnabled = false;
+  }
+
+  resetTime() {
+    this.elapsed = 0;
+    this.elapsedStart = null;
   }
 
   update(delta: number, elapsed: number) {
-    this.elapsed = Math.floor(elapsed);
+    if (!this.elapsedStart) {
+      this.elapsedStart = elapsed;
+    } else {
+      this.elapsed = Math.floor(elapsed - this.elapsedStart);
+    }
   }
 
   print(toContext: CanvasRenderingContext2D) {
