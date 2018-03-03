@@ -328,7 +328,9 @@ export default abstract class GameBoard extends Emitter implements Printable {
 
     if (!isGameOver) {
       // If the player does not have moves left to make, the game is over.
-      const playerHasMoves = !!this.pegs.find((p: Peg) => { return this.getPossibleMoves(p).length !== 0; });
+      const playerHasMoves = !!this.pegs
+        .filter((p: Peg) => p instanceof Peg)
+        .find((p: Peg) => { return this.getPossibleMoves(p).length !== 0; });
       isGameOver = !playerHasMoves;
     }
 
