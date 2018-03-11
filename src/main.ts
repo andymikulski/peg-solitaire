@@ -217,7 +217,7 @@ class PegSolitaire {
     }
 
     // Reset the session tracking variables
-    this.currentLevel = 3;
+    this.currentLevel = 6;
     this.levelScore = 0;
     this.totalScore = 0;
     this.totalSlots = 0;
@@ -336,7 +336,14 @@ class PegSolitaire {
 
     // Begin the timer after the first peg has moved
     this.gameBoard.once(GAME_EVENTS.PEG_JUMPED, () => {
-      this.gameTimer.enable();
+      if (!this.gameTimer.isEnabled) {
+        this.gameTimer.enable();
+      }
+    });
+    this.gameBoard.once(GAME_EVENTS.PEG_EXPLODED, () => {
+      if (!this.gameTimer.isEnabled) {
+        this.gameTimer.enable();
+      }
     });
 
   }
