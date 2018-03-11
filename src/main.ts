@@ -217,7 +217,7 @@ class PegSolitaire {
     }
 
     // Reset the session tracking variables
-    this.currentLevel = 0;
+    this.currentLevel = 3;
     this.levelScore = 0;
     this.totalScore = 0;
     this.totalSlots = 0;
@@ -236,7 +236,7 @@ class PegSolitaire {
       this.restartButton.label = 'ARE YOU SURE?';
       this.needRestartConfirmation = true;
 
-      // Wait ten seconds to revert back to default state
+      // Wait a few seconds to revert back to default state
       setTimeout(() => {
         this.restartButton.label = 'RESTART LEVEL';
         this.needRestartConfirmation = false;
