@@ -217,7 +217,7 @@ class PegSolitaire {
     }
 
     // Reset the session tracking variables
-    this.currentLevel = 6;
+    this.currentLevel = 0;
     this.levelScore = 0;
     this.totalScore = 0;
     this.totalSlots = 0;
